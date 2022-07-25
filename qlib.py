@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 15 15:17:41 2022
+
+@author: archer
+"""
+
+
+import numpy as np
+from scipy.linalg import sqrtm, qr
+from qiskit import QuantumCircuit, QuantumRegister
+from qiskit.quantum_info.operators import Operator
+from qiskit.extensions import UnitaryGate
+
+"""
+How to apply a unitary gate
+
+unitary = UnitaryGate(matrix, label="U")
+circuit.append(unitary, register)
+
+"""
+
+
+def unitary_from_hermitian(hermitian: np.ndarray):
+    """ Decompose a real symmetric matrix to a sum of 
+    two unitary operators
+    """
+    
+    identity = np.eye(N=hermitian.shape[0])
+    
+    term =  1j* sqrtm(identity - hermitian @ hermitian)
+    return hermitian + term, hermitian - term
+
+
+def unitary_decomposition(array: np.ndarray):
+    """ Decompose an array with det(array)<=1
+    into a linear combination of unitaries
+    
+    :Input: ndarray with norm(array)<=1
+    :Returns: a list of unitary arrays 
+        [F1, F2, F3, F4]
+    
+    A = B + iC
+    
+    B = 1/2 (F1 + F2), unitary
+    C = 1/2 (F3 + F4), unitary
+    
+    A = 1/2 (F1 + F2 + iF3 + iF4)
+    
+    """    
+    real_part = 1/2*(array + array.conj().T)
+    imag_part = -1j/2*(array - array.conj().T)
+    
+    F1, F2 = unitary_from_hermitian(real_part)
+    F3, F4 = unitary_from_hermitian(imag_part)
+    
+    return F1, F2, 1j*F3, 1j*F4
+    
+    
+def unitary_from_column_vector(coeffs: np.ndarray):
+    """Constructs a unitary operator taking the zero state |0>
+    to the state with coeffs as amplitudes, using QR decomposition
+    """
+    k = coeffs.shape[0]
+
+    random_array = np.vstack([coeffs, np.random.rand(k-1, k)])
+    unitary, _ = qr(random_array.T)
+
+    return UnitaryGate(unitary)
+    
+    
+    
+
+    
+    
+
+
+
+
+def normalize(matrix: np.ndarray):
+    norm = lambda x: np.abs(np.linalg.norm(x))
+    norm_matrix = norm(matrix)
+
+    return matrix/norm, norm
+
+
+M = 2*np.eye(2)
+coeffs = np.array([.5]*4)
+x0 = np.array([1, 1])
+
+coeffs = calculate_coeffs_unitary(M, x0, 3, 4)
+
+
+unitary = unitary_from_column_vector(coeffs).to_matrix().real
+

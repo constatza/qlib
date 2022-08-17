@@ -9,8 +9,7 @@ Created on Fri Jul 15 15:17:41 2022
 
 import numpy as np
 from scipy.linalg import sqrtm, qr
-from qiskit import QuantumCircuit, QuantumRegister
-from qiskit.quantum_info.operators import Operator
+
 from qiskit.extensions import UnitaryGate
 
 """
@@ -33,7 +32,7 @@ def unitary_from_hermitian(hermitian: np.ndarray):
     return hermitian + term, hermitian - term
 
 
-def unitary_decomposition(array: np.ndarray):
+def linear_decomposition_of_unitaries(array: np.ndarray):
     """ Decompose an array with det(array)<=1
     into a linear combination of unitaries
     
@@ -58,7 +57,7 @@ def unitary_decomposition(array: np.ndarray):
     return F1, F2, 1j*F3, 1j*F4
     
     
-def unitary_from_column_vector(coeffs: np.ndarray):
+def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
     """Constructs a unitary operator taking the zero state |0>
     to the state with coeffs as amplitudes, using QR decomposition
     """
@@ -67,30 +66,25 @@ def unitary_from_column_vector(coeffs: np.ndarray):
     random_array = np.vstack([coeffs, np.random.rand(k-1, k)])
     unitary, _ = qr(random_array.T)
 
-    return UnitaryGate(unitary)
-    
-    
-    
-
-    
+    return UnitaryGate(unitary, *args, **kwargs)
     
 
 
+def states2qubits(num_states: int):
+    
+    return int(np.ceil(np.log2(num_states)))
+    
+    
+def dagger(matrix: np.ndarray):
+    
+    return matrix.conj().T
 
 
 def normalize(matrix: np.ndarray):
-    norm = lambda x: np.abs(np.linalg.norm(x))
-    norm_matrix = norm(matrix)
+    norm= lambda x: np.abs(np.linalg.norm(x))
+    matrix_norm = norm(matrix)
 
-    return matrix/norm, norm
-
-
-M = 2*np.eye(2)
-coeffs = np.array([.5]*4)
-x0 = np.array([1, 1])
-
-coeffs = calculate_coeffs_unitary(M, x0, 3, 4)
+    return matrix/matrix_norm, matrix_norm
 
 
-unitary = unitary_from_column_vector(coeffs).to_matrix().real
 

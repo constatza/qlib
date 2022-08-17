@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+
+
+rm ./output/$1.out
+
+if [[ ! -d ./output ]]; then mkdir ./output; fi
+
+
+for (( numq=$2; numq<=$3; numq++))
+do
+    for (( numf=$4;  numf<=$5; numf++))
+    do
+        for ((error=1; error<=$6; error++))
+        do
+            echo "Running circuit for q:$numq, f:$numf, e:$error"
+            ./test.py --no-plots -n $1 -f $numf -q $numq -e $error>> ./output/$1.out &
+        done
+    done
+done
+wait
+
+cat ./output/$1.out | sed 's/[^0-9.+-]//g' | sed "s/\([+-]\)/e\1/g" > ./output/$1.num 
+columns  -c 5  -i ./output/$1.num > ./output/$1.dat  
+rm ./output/$1.{out,num}

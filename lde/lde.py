@@ -42,7 +42,7 @@ def build_circuit_from_unitary(A, Vs1, Ux):
     
     num_working_qubits = A.num_qubits
     num_ancilla_qubits = Vs1.num_qubits
-    ancilla = QuantumRegister(num_ancilla_qubits, name="ancilla")
+    ancilla = AncillaRegister(num_ancilla_qubits, name="ancilla")
     working = QuantumRegister(num_working_qubits, name="working")
     qc = QuantumCircuit(ancilla, working,  name="Unitary A")
     
@@ -82,9 +82,7 @@ def evolve_unitary(unitary_matrix, x0, t, num_ancilla_qubits):
 
 
 def exact_solution(matrix, x0, t):
-    
     return expm(matrix*t) @ x0
-    
     
 
 
@@ -107,14 +105,11 @@ if __name__=="__main__":
     lcu_coeffs = np.array([.5]*4)
     x0 = np.array([1, 0])
    
-  
     matrix_normalized, matrix_norm = normalize(M)
     
     A = linear_decomposition_of_unitaries(matrix_normalized)
     
-    
     Agate = UnitaryGate(M)
-    
     
     backend = Aer.get_backend('statevector_simulator',
                                    device='GPU',
@@ -146,7 +141,6 @@ if __name__=="__main__":
 
         state = Statevector.from_instruction(qc)
     
-    
     result = execute(experiments, backend, optimization_level=3).result()
    
     x = []
@@ -167,8 +161,4 @@ if __name__=="__main__":
     plt.xlabel('t')
     
     plt.legend(iter(lines), ('$\dot x$', '$x$', 'exact $\dot x$', 'exact $x$'))
-
-
-
-
 

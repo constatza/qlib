@@ -63,8 +63,6 @@ class UnitaryEvolution(BaseEvolution):
         self.Ux_gate = None
 
         
-    
-    
     def build_circuit(self, include_Ux=True):
 
         ancilla = AncillaRegister(self.num_ancilla_qubits, name="ancilla")
@@ -76,7 +74,7 @@ class UnitaryEvolution(BaseEvolution):
             
         qc.append(self.Vs1_gate, ancilla)
         
-        for i in range(0, 2**self.num_ancilla_qubits):
+        for i in range(0, self.taylor_terms + 1):
             Um = self.matrix_gate.power(i).control(self.num_ancilla_qubits)
             Um.label = f"U{i}"
             Um.ctrl_state = i
@@ -96,8 +94,10 @@ class UnitaryEvolution(BaseEvolution):
             self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
         
         
-        taylor_coeffs = calculate_taylor_coeffs_unitary(1, self.x0_norm,
-                                                  t, 2**self.num_ancilla_qubits)
+        taylor_coeffs = calculate_taylor_coeffs_unitary(1, 
+                                                        self.x0_norm,
+                                                        t, 
+                                                        2**self.num_ancilla_qubits)
         
         self.Vs1_gate = unitary_from_column_vector(np.sqrt(taylor_coeffs), label="Vs1")
         
@@ -151,9 +151,7 @@ class RangeSimulation:
 def exact_solution(matrix, x0, t):
     return expm(matrix*t) @ x0
 
-
-    
-    
+ 
 def calculate_taylor_coeffs_unitary(matrix_norm, x0_norm, t: float, num_ancilla_qubits: int):
     
     coeffs = []

@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import qiskit
 
-num_working_qubits= 1
+
+
+taylor_terms = 2
 
 M = np.array([[0, -1],
           [1, 0]])
@@ -25,10 +27,8 @@ M = np.array([[0, -1],
  
   
 lcu_coeffs = np.array([.5]*4)
-x0 = np.array([1, 0])
+x0 = -np.array([1, 0.5])
   
-
-
 
 
 backend = qiskit.Aer.get_backend('statevector_simulator',
@@ -42,15 +42,15 @@ backend = qiskit.Aer.get_backend('statevector_simulator',
 time = np.linspace(0.01, 3)
 
 
-lde = UnitaryEvolution(M, x0, k=3)
+lde = UnitaryEvolution(M, x0, k=taylor_terms)
 
 sim = RangeSimulation(lde, backend=backend)
 
 x = sim.simulate_range(time)
 x_classical = sim.simulate_range_exact(time)
 
-lines = plt.plot(time, x, time, -x_classical)
-plt.title(f"Taylor terms k={2**k:d}")
+lines = plt.plot(time, x, time, x_classical)
+plt.title(f"Taylor terms k={taylor_terms:d}")
 plt.xlabel('t')
 
 plt.legend(iter(lines), ('$\dot x$', '$x$', 'exact $\dot x$', 'exact $x$'))

@@ -80,11 +80,12 @@ def dagger(matrix: np.ndarray):
     return matrix.conj().T
 
 
-def normalize(matrix: np.ndarray):
-    norm= lambda x: np.abs(np.linalg.norm(x))
+def normalized(matrix: np.ndarray, return_norm=False):
+    norm = lambda x: np.abs(np.linalg.norm(x))
     matrix_norm = norm(matrix)
+    
+    return matrix/matrix_norm
 
-    return matrix/matrix_norm, matrix_norm
 
 
 

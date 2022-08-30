@@ -25,10 +25,10 @@ def unitary_from_hermitian(hermitian: np.ndarray):
     """ Decompose a real symmetric matrix to a sum of 
     two unitary operators
     """
-    
+
     identity = np.eye(N=hermitian.shape[0])
-    
-    term =  1j* sqrtm(identity - hermitian @ hermitian)
+
+    term = 1j * sqrtm(identity - hermitian @ hermitian)
     return hermitian + term, hermitian - term
 
 
@@ -47,16 +47,16 @@ def linear_decomposition_of_unitaries(array: np.ndarray):
     
     A = 1/2 (F1 + F2 + iF3 + iF4)
     
-    """    
+    """
     real_part = 1/2*(array + array.conj().T)
     imag_part = -1j/2*(array - array.conj().T)
-    
+
     F1, F2 = unitary_from_hermitian(real_part)
     F3, F4 = unitary_from_hermitian(imag_part)
-    
+
     return F1, F2, 1j*F3, 1j*F4
-    
-    
+
+
 def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
     """Constructs a unitary operator taking the zero state |0>
     to the state with coeffs as amplitudes, using QR decomposition
@@ -66,26 +66,24 @@ def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
     random_array = np.vstack([coeffs, np.random.rand(k-1, k)])
     unitary, _ = qr(random_array.T)
 
+    if unitary[0, 0] * coeffs[0] < 0:
+        # assert same sign for operator and coeffs
+        unitary *= -1
     return UnitaryGate(unitary, *args, **kwargs)
-    
 
 
 def states2qubits(num_states: int):
-    
+
     return int(np.ceil(np.log2(num_states)))
-    
-    
+
+
 def dagger(matrix: np.ndarray):
-    
+
     return matrix.conj().T
 
 
 def normalized(matrix: np.ndarray, return_norm=False):
-    norm = lambda x: np.abs(np.linalg.norm(x))
+    def norm(x): return np.abs(np.linalg.norm(x))
     matrix_norm = norm(matrix)
-    
+
     return matrix/matrix_norm
-
-
-
-

@@ -54,7 +54,7 @@ def linear_decomposition_of_unitaries(array: np.ndarray):
     F1, F2 = unitary_from_hermitian(real_part)
     F3, F4 = unitary_from_hermitian(imag_part)
 
-    return F1, F2, 1j*F3, 1j*F4
+    return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
 
 
 def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):

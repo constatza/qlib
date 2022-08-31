@@ -44,6 +44,25 @@ class BaseEvolution:
     def exact_solution(self, t):
         return exact_solution(self.matrix, self.x0, t)
 
+    def evolve(self, t, include_Ux=True):
+
+        if include_Ux:
+            self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
+
+        taylor_coeffs = calculate_taylor_coeffs_unitary(1,
+                                                        self.x0_norm,
+                                                        t,
+                                                        2**self.num_ancilla_qubits)
+
+        self.Vs1_gate = unitary_from_column_vector(
+            np.sqrt(taylor_coeffs), label="Vs1")
+
+        self.build_circuit()
+
+        self.scale_factor = taylor_coeffs.sum()
+
+        return self.circuit, self.scale_factor
+
 
 class UnitaryEvolution(BaseEvolution):
 
@@ -76,24 +95,7 @@ class UnitaryEvolution(BaseEvolution):
 
         self.circuit = qc
 
-    def evolve(self, t, include_Ux=True):
 
-        if include_Ux:
-            self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
-
-        taylor_coeffs = calculate_taylor_coeffs_unitary(1,
-                                                        self.x0_norm,
-                                                        t,
-                                                        2**self.num_ancilla_qubits)
-
-        self.Vs1_gate = unitary_from_column_vector(
-            np.sqrt(taylor_coeffs), label="Vs1")
-
-        self.build_circuit()
-
-        self.scale_factor = taylor_coeffs.sum()
-
-        return self.circuit, self.scale_factor
 
 
 class Evolution(BaseEvolution):
@@ -101,8 +103,12 @@ class Evolution(BaseEvolution):
     def __init__(self, matrix, x0, k=3):
         super().__init__(matrix, x0, k)
         # convert matrix to linear combination of unitaries
-        self.lcu_gates = linear_decomposition_of_unitaries(matrix)
-        self.num_of_unitaries = len(self.lcu_gates)  # change if different lcu algorithm
+        # coefficients are 0.5 for this algorithm
+        matrices, coeffs = linear_decomposition_of_unitaries(matrix)
+        self.lcu_matrices = matrices
+        self.lcu_coeffs = coeffs
+        self.lcu_gates = list(map(UnitaryGate, matrices))
+        self.num_of_unitaries = len(self.lcu_gates)  
         self.num_decomposition_qubits = states2qubits(self.num_of_unitaries)
 
     def build_circuit(self, include_Ux=True):
@@ -113,21 +119,32 @@ class Evolution(BaseEvolution):
         ancilla_decomposition = []
         
         for i in range(self.num_ancilla_qubits):
-            ancilla_decomposition.append(
-                AncillaRegister(self.num_decomposition_qubits, 
-                                      name=f"decomposition_{i:d}")
-            )
+            subreg =  AncillaRegister(self.num_decomposition_qubits, 
+                                   name=f"decomposition_{i:d}") 
+            
+            ancilla_decomposition.append(subreg)
             
         
-        qc = QuantumCircuit(working, *ancilla_decomposition, ancilla_main,  name="Unitary A")
+        qc = QuantumCircuit(working,  ancilla_main, *ancilla_decomposition,
+                            name="LDE")
 
         if include_Ux:
             qc.append(self.Ux_gate, working)
 
         qc.append(self.Vs1_gate, ancilla_main)
         
-        qc.draw()
+        for m, anc in enumerate(ancilla_main):
+            for i in range(0, self.num_of_unitaries ):
+                Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1)
+                Ai.label = f"A{i}"
+                Ai.ctrl_state = 2*i + 1
+                
+                qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
         
+        
+        
+        
+        self.circuit = qc
 
 
 class RangeSimulation:

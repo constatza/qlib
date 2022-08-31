@@ -6,6 +6,10 @@ Created on Mon Jul 25 12:48:03 2022
 @author: archer
 """
 
+import sys
+# sys.path is a list of absolute path strings
+sys.path.append(r'/home/archer/code/quantum')
+
 from qiskit import Aer
 from qlib import normalized, unitary_from_column_vector,\
     states2qubits, linear_decomposition_of_unitaries
@@ -13,9 +17,8 @@ from scipy.linalg import expm, norm
 from qiskit.extensions import UnitaryGate
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, AncillaRegister, execute
 import numpy as np
-import sys
-# sys.path is a list of absolute path strings
-sys.path.append(r'/home/archer/code/quantum')
+
+
 
 
 backend = Aer.get_backend('statevector_simulator',
@@ -49,7 +52,7 @@ class BaseEvolution:
         if include_Ux:
             self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
 
-        taylor_coeffs = calculate_taylor_coeffs_unitary(1,
+        taylor_coeffs = calculate_taylor_coeffs_unitary(1.4,
                                                         self.x0_norm,
                                                         t,
                                                         2**self.num_ancilla_qubits)

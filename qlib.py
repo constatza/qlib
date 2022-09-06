@@ -73,8 +73,9 @@ def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
 
 
 def states2qubits(num_states: int):
-
-    return int(np.ceil(np.log2(num_states)))
+    if num_states==1:
+        return 1
+    return int(np.ceil(np.log2(num_states) ))
 
 
 def dagger(matrix: np.ndarray):

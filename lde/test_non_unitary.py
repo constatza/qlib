@@ -33,39 +33,38 @@ backend = qiskit.Aer.get_backend('statevector_simulator',
                                  )
 
 
-time = np.linspace(0.0, 2)
+time = np.linspace(0.0, 2, 10)
 
 
 solutions = []
 
 for num_terms in taylor_terms:
     lde = Evolution(M, x0, k=num_terms)
-    lde.evolve(10)
+  
+    sim = RangeSimulation(lde, backend=backend)
 
-#     sim = RangeSimulation(lde, backend=backend)
-
-#     solutions.append(sim.simulate_range(time))
-
-
-# fig, ax = plt.subplots()
-
-# for i, num_terms in enumerate(taylor_terms):
-#     x = solutions[i]
-#     ax.plot(time, x[:, 0], '--', label=f"k={num_terms:d}")
+    solutions.append(sim.simulate_range(time))
 
 
-# x_classical = sim.simulate_range_exact(time)
-# ax.plot(time, x_classical[:, 0],  color='g', label="Exact")
+fig, ax = plt.subplots()
+
+for i, num_terms in enumerate(taylor_terms):
+    x = solutions[i]
+    ax.plot(time, x[:, 0], '--', label=f"k={num_terms:d}")
 
 
-# ax.set_title("LDE 1-dof system $\ddot{x} + x = 0$")
-# ax.set_ylabel("$x(t)$")
-# ax.set_xlabel('$t$')
-# ax.legend()
+x_classical = sim.simulate_range_exact(time)
+ax.plot(time, x_classical[:, 0],  color='g', label="Exact")
 
 
-# # plt.savefig("/home/archer/Documents/phd/presentations/lde/img/solution_per_taylor_terms_1dof_xdot.png",
-# #             dpi=400,
-# #             format='png')
+ax.set_title("LDE 1-dof system $\ddot{x} + x = 0$")
+ax.set_ylabel("$x(t)$")
+ax.set_xlabel('$t$')
+ax.legend()
 
-# plt.show()
+
+# plt.savefig("/home/archer/Documents/phd/presentations/lde/img/solution_per_taylor_terms_1dof_xdot.png",
+#             dpi=400,
+#             format='png')
+
+plt.show()

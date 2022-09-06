@@ -22,7 +22,7 @@ M = np.array([[0, 1],
 
 
 lcu_coeffs = np.array([.5]*4)
-x0 = np.array([1, -1])
+x0 = np.array([1, 0])
 
 
 backend = qiskit.Aer.get_backend('statevector_simulator',
@@ -33,7 +33,7 @@ backend = qiskit.Aer.get_backend('statevector_simulator',
                                  )
 
 
-time = np.linspace(0.0, 2)
+time = np.linspace(0.0, 2, 20)
 
 
 solutions = []
@@ -50,15 +50,15 @@ fig, ax = plt.subplots()
 
 for i, num_terms in enumerate(taylor_terms):
     x = solutions[i]
-    ax.plot(time, x[:, 0], '--', label=f"k={num_terms:d}")
+    ax.plot(time, x[:, 1], '--', label=f"k={num_terms:d}")
 
 
 x_classical = sim.simulate_range_exact(time)
-ax.plot(time, x_classical[:, 0],  color='g', label="Exact")
+ax.plot(time, x_classical[:, 1],  color='g', label="Exact")
 
 
 ax.set_title("LDE 1-dof system $\ddot{x} + x = 0$")
-ax.set_ylabel("$x(t)$")
+ax.set_ylabel("$\dot x(t)$")
 ax.set_xlabel('$t$')
 ax.legend()
 

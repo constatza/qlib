@@ -34,11 +34,11 @@ class BaseEvolution:
     def __init__(self, matrix, x0, k):
         self.matrix = matrix
         self.x0 = x0
-        self.matrix_norm = norm(matrix)
+        self.matrix_norm = norm(matrix, ord=2)
         self.x0_norm = norm(x0)
-        self.taylor_terms = k
-        self.num_ancilla_qubits = states2qubits(k+1)
         self.num_working_qubits = states2qubits(x0.shape[0])
+        self.num_taylor_coeffs = 2**states2qubits(k+1)
+        self.taylor_coeffs = None
         self.circuit = None
         self.Vs1_gate = None
         self.Ux_gate = None
@@ -47,24 +47,33 @@ class BaseEvolution:
     def exact_solution(self, t):
         return exact_solution(self.matrix, self.x0, t)
 
-    def evolve(self, t, include_Ux=True):
+    def calculate_taylor_coeffs_unitary(self, t: float):
 
+        coeffs = []
+        for m in range(self.num_taylor_coeffs):
+            coeffs.append((self.matrix_norm*t)**m/np.math.factorial(m))
+
+        self.taylor_coeffs = self.x0_norm*np.array(coeffs)
+    
+    def evolve(self, t, include_Ux=True):
+    
         if include_Ux:
             self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
-
-        taylor_coeffs = calculate_taylor_coeffs_unitary(1.4,
-                                                        self.x0_norm,
-                                                        t,
-                                                        2**self.num_ancilla_qubits)
-
-        self.Vs1_gate = unitary_from_column_vector(
-            np.sqrt(taylor_coeffs), label="Vs1")
-
+    
+        self.calculate_taylor_coeffs_unitary(t)
+    
+        self.construct_gates()
+    
         self.build_circuit()
-
-        self.scale_factor = taylor_coeffs.sum()
-
+    
+        self.scale_factor = self.taylor_coeffs.sum()
+    
         return self.circuit, self.scale_factor
+    
+
+    def construct_gates(self):
+
+        raise NotImplementedError("Method must be overloaded")
 
 
 class UnitaryEvolution(BaseEvolution):
@@ -72,21 +81,22 @@ class UnitaryEvolution(BaseEvolution):
     def __init__(self, matrix, x0, k=3):
         super().__init__(matrix, x0, k)
         self.matrix_gate = UnitaryGate(matrix)
+        self.num_ancilla_qubits =   int(states2qubits(k+1))
 
 
     def build_circuit(self, include_Ux=True):
 
         ancilla = AncillaRegister(self.num_ancilla_qubits, name="ancilla")
         working = QuantumRegister(self.num_working_qubits, name="working")
-        qc = QuantumCircuit(working, ancilla,  name="Unitary A")
+        qc = QuantumCircuit(working, ancilla, name="Unitary A")
 
         if include_Ux:
             qc.append(self.Ux_gate, working)
-
+  
         qc.append(self.Vs1_gate, ancilla)
 
-        for i in range(1, self.taylor_terms + 1):
-            Um = self.matrix_gate.power(i).control(self.num_ancilla_qubits)
+        for i in range(1, self.num_taylor_coeffs):
+            Um = self.matrix_gate.copy().power(i).control(self.num_ancilla_qubits)
             Um.label = f"U{i}"
             Um.ctrl_state = i
             qc.append(Um, [*ancilla, *working])
@@ -98,7 +108,12 @@ class UnitaryEvolution(BaseEvolution):
 
         self.circuit = qc
 
-
+    
+    def construct_gates(self):
+        
+        self.Vs1_gate = unitary_from_column_vector(np.sqrt(self.taylor_coeffs),
+                                   label="Vs1")
+        
 
 
 class Evolution(BaseEvolution):
@@ -107,11 +122,13 @@ class Evolution(BaseEvolution):
         super().__init__(matrix, x0, k)
         # convert matrix to linear combination of unitaries
         # coefficients are 0.5 for this algorithm
+        self.matrix_normalized = self.matrix/self.matrix_norm
         matrices, coeffs = linear_decomposition_of_unitaries(matrix)
         self.lcu_matrices = matrices
         self.lcu_coeffs = coeffs
         self.lcu_gates = list(map(UnitaryGate, matrices))
-        self.num_of_unitaries = len(self.lcu_gates)  
+        self.num_of_unitaries = len(self.lcu_gates)
+        self.num_ancilla_qubits =  k
         self.num_decomposition_qubits = states2qubits(self.num_of_unitaries)
 
     def build_circuit(self, include_Ux=True):
@@ -137,19 +154,45 @@ class Evolution(BaseEvolution):
         qc.append(self.Vs1_gate, ancilla_main)
         
         for m, anc in enumerate(ancilla_main):
+            qc.append(self.Va_gate, ancilla_decomposition[m])
             for i in range(0, self.num_of_unitaries ):
                 Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1)
                 Ai.label = f"A{i}"
                 Ai.ctrl_state = 2*i + 1
                 
                 qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
-        
-        
-        
-        
+                
+        qc.barrier()
+        for reg in ancilla_decomposition:
+            
+            qc.append(self.Va_gate.inverse(), reg)
+            
         self.circuit = qc
 
+            
+    def construct_Vs1_gate(self):
+        k = self.num_ancilla_qubits
+        total_size = 2**k
+        array = np.zeros(total_size)
+        for j in range(k + 1):
+            array[total_size - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
+            
+        self.Vs1_gate = unitary_from_column_vector(array,
+                                   label="Vs1")
+        
+    def construct_Va_gate(self):
+        
+        self.Va_gate = unitary_from_column_vector(np.sqrt(np.array(self.lcu_coeffs)),
+                                                  label="Va")
+    
+    def construct_gates(self):
+        self.construct_Vs1_gate()
+        self.construct_Va_gate()
 
+
+
+
+    
 class RangeSimulation:
 
     def __init__(self, lde_evolution, backend=backend):
@@ -193,14 +236,7 @@ def exact_solution(matrix, x0, t):
     return expm(matrix*t) @ x0
 
 
-def calculate_taylor_coeffs_unitary(matrix_norm, x0_norm, t: float, num_ancilla_qubits: int):
 
-    coeffs = []
-
-    for m in range(num_ancilla_qubits):
-        coeffs.append((matrix_norm*t)**m/np.math.factorial(m))
-
-    return x0_norm*np.array(coeffs)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ import qiskit
 
 
 taylor_terms = np.arange(1, 3)
-M = np.array([[1, 1],
+M = np.array([[0, 1],
               [-1, 0]])
 
 # M = np.eye(2**num_working_qubits)
@@ -22,7 +22,7 @@ M = np.array([[1, 1],
 
 
 lcu_coeffs = np.array([.5]*4)
-x0 = np.array([1, -1])
+x0 = np.array([1, 0])
 
 
 backend = qiskit.Aer.get_backend('statevector_simulator',
@@ -33,17 +33,18 @@ backend = qiskit.Aer.get_backend('statevector_simulator',
                                  )
 
 
-time = np.linspace(0.0, 2, 10)
+time = np.linspace(0.02, 2, 10)
 
 
 solutions = []
-
+sfs = []
 for num_terms in taylor_terms:
     lde = Evolution(M, x0, k=num_terms)
   
     sim = RangeSimulation(lde, backend=backend)
 
-    solutions.append(sim.simulate_range(time))
+    solutions.append(sim.simulate_range(time, apply_scale=False))
+    sfs.append(lde.scale_factor)
 
 
 fig, ax = plt.subplots()

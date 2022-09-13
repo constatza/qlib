@@ -42,38 +42,43 @@ class BaseEvolution:
         self.circuit = None
         self.Vs1_gate = None
         self.Ux_gate = None
-        self.scale_factor = 0.0
 
     def exact_solution(self, t):
         return exact_solution(self.matrix, self.x0, t)
 
-    def calculate_taylor_coeffs_unitary(self, t: float):
 
-        coeffs = []
-        for m in range(self.num_taylor_coeffs):
-            coeffs.append((self.matrix_norm*t)**m/np.math.factorial(m))
-
-        self.taylor_coeffs = self.x0_norm*np.array(coeffs)
-    
     def evolve(self, t, include_Ux=True):
     
         if include_Ux:
             self.Ux_gate = unitary_from_column_vector(self.x0, label="Ux")
     
-        self.calculate_taylor_coeffs_unitary(t)
+        self.calculate_taylor_coeffs(t)
     
         self.construct_gates()
     
         self.build_circuit()
     
-        self.scale_factor = self.taylor_coeffs.sum()
-    
         return self.circuit, self.scale_factor
     
+    def calculate_taylor_coeffs(self, t: float):
+    
+        coeffs = []
+        
+        for m in range(self.num_taylor_coeffs):
+            coeffs.append((self.matrix_norm*t)**m/np.math.factorial(m))
+    
+        self.taylor_coeffs = self.x0_norm*np.array(coeffs)
 
     def construct_gates(self):
 
         raise NotImplementedError("Method must be overloaded")
+        
+        
+    @property
+    def scale_factor(self):
+        
+        raise NotImplementedError("Method must be overloaded")
+        
 
 
 class UnitaryEvolution(BaseEvolution):
@@ -82,7 +87,8 @@ class UnitaryEvolution(BaseEvolution):
         super().__init__(matrix, x0, k)
         self.matrix_gate = UnitaryGate(matrix)
         self.num_ancilla_qubits =   int(states2qubits(k+1))
-
+    
+        
 
     def build_circuit(self, include_Ux=True):
 
@@ -113,8 +119,10 @@ class UnitaryEvolution(BaseEvolution):
         
         self.Vs1_gate = unitary_from_column_vector(np.sqrt(self.taylor_coeffs),
                                    label="Vs1")
+    @property
+    def scale_factor(self):
         
-
+        return self.taylor_coeffs.sum()
 
 class Evolution(BaseEvolution):
 
@@ -123,13 +131,15 @@ class Evolution(BaseEvolution):
         # convert matrix to linear combination of unitaries
         # coefficients are 0.5 for this algorithm
         self.matrix_normalized = self.matrix/self.matrix_norm
-        matrices, coeffs = linear_decomposition_of_unitaries(matrix)
+        matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
         self.lcu_matrices = matrices
         self.lcu_coeffs = coeffs
         self.lcu_gates = list(map(UnitaryGate, matrices))
         self.num_of_unitaries = len(self.lcu_gates)
         self.num_ancilla_qubits =  k
         self.num_decomposition_qubits = states2qubits(self.num_of_unitaries)
+
+
 
     def build_circuit(self, include_Ux=True):
 
@@ -162,9 +172,7 @@ class Evolution(BaseEvolution):
                 
                 qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
                 
-        qc.barrier()
         for reg in ancilla_decomposition:
-            
             qc.append(self.Va_gate.inverse(), reg)
             
         self.circuit = qc
@@ -174,7 +182,7 @@ class Evolution(BaseEvolution):
         k = self.num_ancilla_qubits
         total_size = 2**k
         array = np.zeros(total_size)
-        for j in range(k + 1):
+        for j in range(k+1):
             array[total_size - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
             
         self.Vs1_gate = unitary_from_column_vector(array,
@@ -189,7 +197,12 @@ class Evolution(BaseEvolution):
         self.construct_Vs1_gate()
         self.construct_Va_gate()
 
-
+    
+    @property
+    def scale_factor(self):
+        alpha = np.sum(np.array(self.lcu_coeffs))
+        return np.dot(alpha**np.arange(self.num_taylor_coeffs),
+                      self.taylor_coeffs)
 
 
     
@@ -201,7 +214,7 @@ class RangeSimulation:
         self.circuits = []
         self.backend = backend
 
-    def simulate_range(self, time_range):
+    def simulate_range(self, time_range, apply_scale=True):
         self.circuits = []
 
         num_timesteps = len(time_range)
@@ -213,13 +226,17 @@ class RangeSimulation:
 
         result = execute(self.circuits, self.backend,
                          optimization_level=3).result()
-
+        
         x = []
+        
         for i in range(num_timesteps):
             state = result.get_statevector(i)
-
-            x.append(
-                state.data.real[:2**self.evolution.num_working_qubits]*self.scale_factors[i])
+            scale = self.scale_factors[i]
+            solution = state.data.real[:2**self.evolution.num_working_qubits]
+            if not apply_scale:
+                scale = 1
+            
+            x.append(solution *scale)
 
         return np.array(x)
 

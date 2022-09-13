@@ -8,7 +8,7 @@ Created on Fri Jul 15 15:17:41 2022
 
 
 import numpy as np
-from scipy.linalg import sqrtm, qr
+from scipy.linalg import sqrtm, qr, norm
 
 from qiskit.extensions import UnitaryGate
 
@@ -65,8 +65,8 @@ def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
 
     random_array = np.vstack([coeffs, np.random.rand(k-1, k)])
     unitary, _ = qr(random_array.T)
-
-    if unitary[0, 0] * coeffs[0] < 0:
+    is_nonzero = unitary[:, 0].nonzero()[0][0]
+    if unitary[is_nonzero, 0] * coeffs[is_nonzero] < 0:
         # assert same sign for operator and coeffs
         unitary *= -1
     return UnitaryGate(unitary, *args, **kwargs)
@@ -84,7 +84,7 @@ def dagger(matrix: np.ndarray):
 
 
 def normalized(matrix: np.ndarray, return_norm=False):
-    def norm(x): return np.abs(np.linalg.norm(x))
-    matrix_norm = norm(matrix)
+
+    matrix_norm = norm(matrix, ord=2)
 
     return matrix/matrix_norm

@@ -35,7 +35,7 @@ class BaseEvolution:
         self.matrix = matrix
         self.x0 = x0
         self.matrix_norm = norm(matrix, ord=2)
-        self.x0_norm = norm(x0)
+        self.x0_norm = norm(x0, ord=2)
         self.num_working_qubits = states2qubits(x0.shape[0])
         self.num_taylor_coeffs = 2**states2qubits(k+1)
         self.taylor_coeffs = None
@@ -64,7 +64,7 @@ class BaseEvolution:
     
         coeffs = []
         
-        for m in range(self.num_taylor_coeffs):
+        for m in range(self.k + 1):
             coeffs.append((self.matrix_norm*t)**m/np.math.factorial(m))
     
         self.taylor_coeffs = self.x0_norm*np.array(coeffs)
@@ -78,6 +78,7 @@ class BaseEvolution:
     def scale_factor(self):
         
         raise NotImplementedError("Method must be overloaded")
+        
         
 
 
@@ -124,10 +125,11 @@ class UnitaryEvolution(BaseEvolution):
         
         return self.taylor_coeffs.sum()
 
+
 class Evolution(BaseEvolution):
 
     def __init__(self, matrix, x0, k=3):
-        super().__init__(matrix, x0, k)
+        super().__init__(matrix, x0, k=k)
         # convert matrix to linear combination of unitaries
         # coefficients are 0.5 for this algorithm
         self.matrix_normalized = self.matrix/self.matrix_norm
@@ -137,6 +139,7 @@ class Evolution(BaseEvolution):
         self.lcu_gates = list(map(UnitaryGate, matrices))
         self.num_of_unitaries = len(self.lcu_gates)
         self.num_ancilla_qubits =  k
+        self.k = k
         self.num_decomposition_qubits = states2qubits(self.num_of_unitaries)
 
 
@@ -163,18 +166,20 @@ class Evolution(BaseEvolution):
 
         qc.append(self.Vs1_gate, ancilla_main)
         
-        for m, anc in enumerate(ancilla_main):
+        for m, anc in enumerate(ancilla_main[::-1]):
             qc.append(self.Va_gate, ancilla_decomposition[m])
-            for i in range(0, self.num_of_unitaries ):
+            for i in range(0, self.num_of_unitaries):
                 Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1)
                 Ai.label = f"A{i}"
                 Ai.ctrl_state = 2*i + 1
-                
+
                 qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
-                
+        
+        qc.append(self.Vs1_gate.inverse(), ancilla_main)
+        
         for reg in ancilla_decomposition:
             qc.append(self.Va_gate.inverse(), reg)
-            
+        
         self.circuit = qc
 
             
@@ -183,7 +188,7 @@ class Evolution(BaseEvolution):
         total_size = 2**k
         array = np.zeros(total_size)
         for j in range(k+1):
-            array[total_size - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
+            array[2**k - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
             
         self.Vs1_gate = unitary_from_column_vector(array,
                                    label="Vs1")
@@ -201,7 +206,7 @@ class Evolution(BaseEvolution):
     @property
     def scale_factor(self):
         alpha = np.sum(np.array(self.lcu_coeffs))
-        return np.dot(alpha**np.arange(self.num_taylor_coeffs),
+        return np.dot(alpha**np.arange(self.k + 1),
                       self.taylor_coeffs)
 
 
@@ -214,7 +219,7 @@ class RangeSimulation:
         self.circuits = []
         self.backend = backend
 
-    def simulate_range(self, time_range, apply_scale=True):
+    def simulate_range(self, time_range, apply_scale=False):
         self.circuits = []
 
         num_timesteps = len(time_range)
@@ -253,6 +258,12 @@ def exact_solution(matrix, x0, t):
     return expm(matrix*t) @ x0
 
 
+def show_index(k):
+    import matplotlib.pyplot as plt
+    j = np.arange(k+1)
+    m = 2**k - 2**(k -j)
+    plt.plot(j, m)
+    plt.show()
 
 
 

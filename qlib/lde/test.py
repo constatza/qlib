@@ -12,7 +12,7 @@ import numpy as np
 import qiskit
 
 
-taylor_terms = np.arange(1, 5)
+taylor_terms = np.arange(1, 4)
 M = np.array([[0, 1],
               [-1, 0]])
 

@@ -11,7 +11,7 @@ import sys
 sys.path.append(r'/home/archer/code/quantum')
 
 from qiskit import Aer
-from qlib import normalized, unitary_from_column_vector,\
+from qlib import unitary_from_column_vector,\
     states2qubits, linear_decomposition_of_unitaries
 from scipy.linalg import expm, norm
 from qiskit.extensions import UnitaryGate

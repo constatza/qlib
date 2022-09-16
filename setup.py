@@ -11,5 +11,5 @@ from setuptools import setup, find_packages
 
 setup(
     name='qlib',
-    packages=['qlib']
+    packages=find_packages()
 )

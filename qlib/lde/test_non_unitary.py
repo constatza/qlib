@@ -16,12 +16,8 @@ taylor_terms = np.arange(1, 3)
 M = np.array([[0, 1],
               [-1, 0]])
 
-# M = np.eye(2**num_working_qubits)
-
-# M = np.random.rand(2**num_working_qubits, 2**num_working_qubits)
 
 
-lcu_coeffs = np.array([.5]*4)
 x0 = np.array([1, 0])
 
 
@@ -43,7 +39,7 @@ for num_terms in taylor_terms:
   
     sim = RangeSimulation(lde, backend=backend)
 
-    solutions.append(sim.simulate_range(time, apply_scale=False))
+    solutions.append(sim.simulate_range(time).get_solutions(apply_scale=True))
     sfs.append(lde.scale_factor)
 
 
@@ -54,7 +50,8 @@ for i, num_terms in enumerate(taylor_terms):
     ax.plot(time, x[:, 1], '--', label=f"k={num_terms:d}")
 
 
-x_classical = sim.simulate_range_exact(time)
+x_classical = RangeSimulationExact(M, x0).simulate_range(time).get_solutions()
+
 ax.plot(time, x_classical[:, 1],  color='g', label="Exact")
 
 
@@ -69,3 +66,10 @@ ax.legend()
 #             format='png')
 
 plt.show()
+
+t = time[-1]
+k= num_terms
+index = np.arange(k+1, dtype=int)
+coeff = t**index/np.vectorize(np.math.factorial)( index)
+
+c = np.dot(coeff, 2**index)

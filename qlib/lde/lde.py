@@ -37,14 +37,11 @@ class BaseEvolution:
         self.matrix_norm = norm(matrix, ord=2)
         self.x0_norm = norm(x0, ord=2)
         self.num_working_qubits = states2qubits(x0.shape[0])
-        self.num_taylor_coeffs = 2**states2qubits(k+1)
         self.taylor_coeffs = None
         self.circuit = None
         self.Vs1_gate = None
         self.Ux_gate = None
-
-    def exact_solution(self, t):
-        return exact_solution(self.matrix, self.x0, t)
+        self.k = k
 
 
     def evolve(self, t, include_Ux=True):
@@ -64,7 +61,7 @@ class BaseEvolution:
     
         coeffs = []
         
-        for m in range(self.k + 1):
+        for m in range(self.num_taylor_coeffs):
             coeffs.append((self.matrix_norm*t)**m/np.math.factorial(m))
     
         self.taylor_coeffs = self.x0_norm*np.array(coeffs)
@@ -85,10 +82,10 @@ class BaseEvolution:
 class UnitaryEvolution(BaseEvolution):
 
     def __init__(self, matrix, x0, k=3):
-        super().__init__(matrix, x0, k)
+        super().__init__(matrix, x0, k=k)
         self.matrix_gate = UnitaryGate(matrix)
         self.num_ancilla_qubits =   int(states2qubits(k+1))
-    
+        self.num_taylor_coeffs = 2**states2qubits(k+1)
         
 
     def build_circuit(self, include_Ux=True):
@@ -110,8 +107,6 @@ class UnitaryEvolution(BaseEvolution):
 
         qc.append(self.Vs1_gate.inverse(), ancilla)
 
-        # classical = ClassicalRegister(num_working_qubits)
-        # qc.add_register(classical)
 
         self.circuit = qc
 
@@ -132,6 +127,7 @@ class Evolution(BaseEvolution):
         super().__init__(matrix, x0, k=k)
         # convert matrix to linear combination of unitaries
         # coefficients are 0.5 for this algorithm
+        self.num_taylor_coeffs = k + 1
         self.matrix_normalized = self.matrix/self.matrix_norm
         matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
         self.lcu_matrices = matrices
@@ -139,7 +135,6 @@ class Evolution(BaseEvolution):
         self.lcu_gates = list(map(UnitaryGate, matrices))
         self.num_of_unitaries = len(self.lcu_gates)
         self.num_ancilla_qubits =  k
-        self.k = k
         self.num_decomposition_qubits = states2qubits(self.num_of_unitaries)
 
 
@@ -154,10 +149,8 @@ class Evolution(BaseEvolution):
         for i in range(self.num_ancilla_qubits):
             subreg =  AncillaRegister(self.num_decomposition_qubits, 
                                    name=f"decomposition_{i:d}") 
-            
             ancilla_decomposition.append(subreg)
             
-        
         qc = QuantumCircuit(working,  ancilla_main, *ancilla_decomposition,
                             name="LDE")
 
@@ -166,19 +159,25 @@ class Evolution(BaseEvolution):
 
         qc.append(self.Vs1_gate, ancilla_main)
         
-        for m, anc in enumerate(ancilla_main[::-1]):
-            qc.append(self.Va_gate, ancilla_decomposition[m])
-            for i in range(0, self.num_of_unitaries):
+        for reg in ancilla_decomposition:
+            qc.append(self.Va_gate, reg)
+        
+        qc.barrier()
+        
+        for m, anc in enumerate(ancilla_main):
+            for i in range(self.num_of_unitaries):
                 Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1)
                 Ai.label = f"A{i}"
                 Ai.ctrl_state = 2*i + 1
 
                 qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
         
-        qc.append(self.Vs1_gate.inverse(), ancilla_main)
+        qc.barrier()
         
         for reg in ancilla_decomposition:
             qc.append(self.Va_gate.inverse(), reg)
+            
+        qc.append(self.Vs1_gate.inverse(), ancilla_main)
         
         self.circuit = qc
 
@@ -187,8 +186,9 @@ class Evolution(BaseEvolution):
         k = self.num_ancilla_qubits
         total_size = 2**k
         array = np.zeros(total_size)
+
         for j in range(k+1):
-            array[2**k - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
+            array[2**(k) - 2**(k-j)] = np.sqrt(self.taylor_coeffs[j])
             
         self.Vs1_gate = unitary_from_column_vector(array,
                                    label="Vs1")
@@ -206,7 +206,7 @@ class Evolution(BaseEvolution):
     @property
     def scale_factor(self):
         alpha = np.sum(np.array(self.lcu_coeffs))
-        return np.dot(alpha**np.arange(self.k + 1),
+        return np.dot(alpha**np.arange(self.num_taylor_coeffs),
                       self.taylor_coeffs)
 
 
@@ -219,7 +219,7 @@ class RangeSimulation:
         self.circuits = []
         self.backend = backend
 
-    def simulate_range(self, time_range, apply_scale=False):
+    def simulate_range(self, time_range):
         self.circuits = []
 
         num_timesteps = len(time_range)
@@ -232,30 +232,57 @@ class RangeSimulation:
         result = execute(self.circuits, self.backend,
                          optimization_level=3).result()
         
-        x = []
-        
+        solutions = []
+        scale_factors = []
         for i in range(num_timesteps):
             state = result.get_statevector(i)
             scale = self.scale_factors[i]
             solution = state.data.real[:2**self.evolution.num_working_qubits]
-            if not apply_scale:
-                scale = 1
             
-            x.append(solution *scale)
+            solutions.append(solution)
+            scale_factors.append(scale)
+        
+        self.solutions = np.array(solutions)
+        self.scale_factors = np.array(scale_factors)
+        
+        return self
 
-        return np.array(x)
+    
+    
+    def get_solutions(self, apply_scale=True):
 
-    def simulate_range_exact(self, time_range):
+        if apply_scale:
+            return self.solutions * self.scale_factors[:, np.newaxis]
+        else:
+            return self.solutions
+
+
+class RangeSimulationExact:
+   
+   def __init__(self, matrix, x0):
+       
+       self.matrix = matrix
+       self.x0 = x0
+   
+   def exact_solution(self, t):
+       return expm(self.matrix*t) @ self.x0
+   
+    
+   def simulate_range(self, time_range):
+       
         exact_solutions = []
         for t in time_range:
-            exact = self.evolution.exact_solution(t)
+            exact = self.exact_solution(t)
             exact_solutions.append(exact)
 
-        return np.array(exact_solutions)
+        self.solutions = np.array(exact_solutions)
+    
+        return self
+    
+   def get_solutions(self):
+       
+       return self.solutions
 
-
-def exact_solution(matrix, x0, t):
-    return expm(matrix*t) @ x0
 
 
 def show_index(k):

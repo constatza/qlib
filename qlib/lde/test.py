@@ -12,17 +12,12 @@ import numpy as np
 import qiskit
 
 
-taylor_terms = np.arange(1, 4)
+taylor_terms = np.arange(1, 3)
 M = np.array([[0, 1],
               [-1, 0]])
 
-# M = np.eye(2**num_working_qubits)
 
-# M = np.random.rand(2**num_working_qubits, 2**num_working_qubits)
-
-
-lcu_coeffs = np.array([.5]*4)
-x0 = np.array([1, 0])
+x0 = np.array([1, 0 ])
 
 
 backend = qiskit.Aer.get_backend('statevector_simulator',
@@ -33,7 +28,7 @@ backend = qiskit.Aer.get_backend('statevector_simulator',
                                  )
 
 
-time = np.linspace(0.0, 2, 20)
+time = np.linspace(0.02, 2, 10)
 
 
 solutions = []
@@ -43,7 +38,7 @@ for num_terms in taylor_terms:
 
     sim = RangeSimulation(lde, backend=backend)
 
-    solutions.append(sim.simulate_range(time))
+    solutions.append(sim.simulate_range(time).get_solutions(apply_scale=False))
 
 
 fig, ax = plt.subplots()
@@ -53,7 +48,7 @@ for i, num_terms in enumerate(taylor_terms):
     ax.plot(time, x[:, 1], '--', label=f"k={num_terms:d}")
 
 
-x_classical = sim.simulate_range_exact(time)
+x_classical = RangeSimulationExact(M, x0).simulate_range(time).get_solutions()
 ax.plot(time, x_classical[:, 1],  color='g', label="Exact")
 
 

@@ -40,6 +40,7 @@ class BaseEvolution:
         self.taylor_coeffs = None
         self.circuit = None
         self.Vs1_gate = None
+        self.k = k
         self.Ux_gate = None
         self.k = k
 

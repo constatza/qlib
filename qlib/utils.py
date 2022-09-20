@@ -9,7 +9,7 @@ Created on Fri Jul 15 15:17:41 2022
 
 import numpy as np
 from scipy.linalg import sqrtm, qr, norm
-
+import matplotlib.pyplot as plt
 from qiskit.extensions import UnitaryGate
 
 """
@@ -19,6 +19,23 @@ unitary = UnitaryGate(matrix, label="U")
 circuit.append(unitary, register)
 
 """
+
+
+class LinearDecompositionOfUnitaries:
+    
+    def __init__(self, matrix):
+        self.matrix = matrix
+        self.matrix_norm = norm(matrix, ord=2)
+        self.matrix_normalized = self.matrix/self.matrix_norm
+        matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
+        self.decomposition = np.array(matrices)
+        self.coeffs = np.array(coeffs)
+        self.gates = list(map(UnitaryGate, matrices))
+        self.num_of_unitaries = len(self.gates)
+
+    def test_sum(self):
+        
+        return np.sum(self.coeffs * self.decomposition, axis=0)
 
 
 def unitary_from_hermitian(hermitian: np.ndarray):
@@ -88,3 +105,9 @@ def normalized(matrix: np.ndarray, return_norm=False):
     matrix_norm = norm(matrix, ord=2)
 
     return matrix/matrix_norm
+
+
+def draw(qc):
+    fig, ax = plt.subplots(figsize=(15, 10))
+    qc.draw('mpl', ax=ax)
+    plt.show()

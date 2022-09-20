@@ -147,7 +147,7 @@ class Evolution(BaseEvolution):
         ancilla_decomposition = []
         
         for i in range(self.num_ancilla_qubits):
-            subreg =  AncillaRegister(self.num_decomposition_qubits, 
+            subreg =  QuantumRegister(self.num_decomposition_qubits, 
                                    name=f"decomposition_{i:d}") 
             ancilla_decomposition.append(subreg)
             
@@ -166,9 +166,10 @@ class Evolution(BaseEvolution):
         
         for m, anc in enumerate(ancilla_main):
             for i in range(self.num_of_unitaries):
-                Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1)
-                Ai.label = f"A{i}"
-                Ai.ctrl_state = 2*i + 1
+                Ai = self.lcu_gates[i].control(self.num_decomposition_qubits + 1,
+                                               label=f"A{i}",
+                                               ctrl_state=2*i + 1)
+
 
                 qc.append(Ai, [anc, *ancilla_decomposition[m], working] )
         

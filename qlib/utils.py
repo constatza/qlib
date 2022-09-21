@@ -31,7 +31,7 @@ class LinearDecompositionOfUnitaries:
         self.decomposition = np.array(matrices)
         self.coeffs = np.array(coeffs)
         self.gates = list(map(UnitaryGate, matrices))
-        self.num_of_unitaries = len(self.gates)
+        self.num_unitaries = len(self.gates)
 
     def test_sum(self):
         

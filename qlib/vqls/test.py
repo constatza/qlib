@@ -21,25 +21,27 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-size = 2**4
+size = 2**2
 num_layers = 3
 num_shots = 2**11
 
 b = np.ones(size)
 A = np.random.rand(size, size)
+A = A + A.T
 x = np.linalg.solve(A, b)
 
 vqls = VQLS(A, b)
 
 
 options = {'maxiter': 50,
-           'tol': 1e-4,
+           'tol': 1e-10,
     'disp': True}
 
 bounds = [(0, 2*np.pi) for _ in range(vqls.ansatz.num_parameters)]
 
 
 
-x_approx = vqls.solve(optimizer='COBYLA',  options=options).get_solution()
+xa = vqls.solve(optimizer='COBYLA',  
+                      options=options).get_solution(scaled=True)
 
-b_approx = x_approx.dot(A)
+ba = xa.dot(A)

@@ -38,14 +38,16 @@ class LinearDecompositionOfUnitaries:
         return np.sum(self.coeffs * self.decomposition, axis=0)
 
 
-def unitary_from_hermitian(hermitian: np.ndarray):
+def unitary_from_hermitian(hermitian: np.ndarray, tol=1e-8):
     """ Decompose a real symmetric matrix to a sum of 
     two unitary operators
     """
 
-    identity = np.eye(N=hermitian.shape[0])
+    identity = np.eye(N=hermitian.shape[0], dtype=np.complex)
 
     term = 1j * sqrtm(identity - hermitian @ hermitian)
+    
+    term[ np.abs(term) < tol ] = 0
     return hermitian + term, hermitian - term
 
 
@@ -67,11 +69,19 @@ def linear_decomposition_of_unitaries(array: np.ndarray):
     """
     real_part = 1/2*(array + array.conj().T)
     imag_part = -1j/2*(array - array.conj().T)
-
+    
     F1, F2 = unitary_from_hermitian(real_part)
-    F3, F4 = unitary_from_hermitian(imag_part)
+    
+    if not np.allclose(imag_part, 0, atol=1e-9):
 
-    return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
+       
+        F3, F4 = unitary_from_hermitian(imag_part)
+    
+        return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
+    else:
+        # F3, F4 = unitary_from_hermitian(imag_part)
+        # return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
+        return (F1, F2), (.5, .5)
 
 
 def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):

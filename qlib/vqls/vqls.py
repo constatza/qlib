@@ -78,17 +78,17 @@ class LocalProjector:
 
         inv = '\dagger'
         A_mu = self.lcu.gates[mu].control(1, label=f'$A_{mu}$')
-        A_nu = self.lcu.gates[nu].inverse().control(1,
+        A_nu = self.lcu.gates[nu].adjoint().control(1,
                                                     label=f'$A^{inv:s}_{nu:d}$')
 
         num_qubits = A_mu.num_qubits
 
-        qc = QuantumCircuit(control_reg, working_reg, name='$\delta_{ij}$')
+        qc = QuantumCircuit(control_reg, working_reg, name='$\delta_{\mu \nu}$')
 
         qc.append(self.ansatz.get_circuit(), working_reg)
         qc.append(A_mu, [control_reg, *working_reg])
         if j > 0:
-            qc.append(self.Ub.inverse(), working_reg)
+            qc.append(self.Ub.adjoint(), working_reg)
             qc.cz(control_reg, j)
             qc.append(self.Ub, working_reg)
         qc.append(A_nu, [control_reg, *working_reg])
@@ -183,12 +183,12 @@ class VQLS:
         hadamard_real = HadamardTest(operation, imaginary=False).get_circuit()
         hadamard_imag = HadamardTest(operation, imaginary=True).get_circuit()
 
-        # transpiled = transpile([hadamard_real, hadamard_imag],
-        #                               backend=backend,
-        #                               optimization_level=opt)
+        transpiled = transpile([hadamard_real, hadamard_imag],
+                                      backend=backend,
+                                      optimization_level=opt)
 
-        # return transpiled
-        return (hadamard_real, hadamard_imag)
+        return transpiled
+        # return (hadamard_real, hadamard_imag)
 
     def run_circuits(self, values):
         experiments = []
@@ -250,7 +250,7 @@ class VQLS:
         beta_norm = coeffs.dot(betas).dot(coeffs.conj().T).real[0, 0]
 
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
-        return self.cost
+        return np.sqrt(self.cost)
 
     def optimal_state(self, values_opt):
         backend = Aer.get_backend('statevector_simulator')

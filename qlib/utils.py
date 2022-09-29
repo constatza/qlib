@@ -11,6 +11,7 @@ import numpy as np
 from scipy.linalg import sqrtm, qr, norm
 import matplotlib.pyplot as plt
 from qiskit.extensions import UnitaryGate
+from qiskit.quantum_info import Operator
 
 """
 How to apply a unitary gate
@@ -30,7 +31,8 @@ class LinearDecompositionOfUnitaries:
         matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
         self.decomposition = np.array(matrices)
         self.coeffs = np.array(coeffs)
-        self.gates = list(map(UnitaryGate, matrices))
+        self.gates = [UnitaryGate(matrix, label=f'A_{i}') 
+                      for i, matrix in enumerate(matrices)]
         self.num_unitaries = len(self.gates)
 
     def test_sum(self):
@@ -43,11 +45,11 @@ def unitary_from_hermitian(hermitian: np.ndarray, tol=1e-8):
     two unitary operators
     """
 
-    identity = np.eye(N=hermitian.shape[0], dtype=np.complex)
+    identity = np.eye(N=hermitian.shape[0], dtype=np.float64)
 
     term = 1j * sqrtm(identity - hermitian @ hermitian)
-    
-    term[ np.abs(term) < tol ] = 0
+    term.real[ np.abs(term.real) < tol ] = 0
+    term.imag[ np.abs(term.imag) < tol ] = 0
     return hermitian + term, hermitian - term
 
 
@@ -67,21 +69,21 @@ def linear_decomposition_of_unitaries(array: np.ndarray):
     A = 1/2 (F1 + F2 + iF3 + iF4)
     
     """
-    real_part = 1/2*(array + array.conj().T)
-    imag_part = -1j/2*(array - array.conj().T)
+    hermitian = np.allclose(array, array.conj().T)
+    if hermitian:
+        symmetric_part = 0.5*(array + array.conj().T)
+        F1, F2 = unitary_from_hermitian(symmetric_part)
+        g = F1.dot( F1.conj().T)
+        return (F1, F2), (.5, .5)
     
-    F1, F2 = unitary_from_hermitian(real_part)
-    
-    if not np.allclose(imag_part, 0, atol=1e-9):
-
-       
-        F3, F4 = unitary_from_hermitian(imag_part)
+    else:
+        symmetric_part = 1/2*(array + array.conj().T)
+        antisymmetric_part = -1j/2*(array - array.conj().T)
+        
+        F1, F2 = unitary_from_hermitian(symmetric_part)
+        F3, F4 = unitary_from_hermitian(antisymmetric_part)
     
         return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
-    else:
-        # F3, F4 = unitary_from_hermitian(imag_part)
-        # return (F1, F2, 1j*F3, 1j*F4), (.5, .5, .5, .5)
-        return (F1, F2), (.5, .5)
 
 
 def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):

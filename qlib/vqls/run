@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-source $HOME/.virtualenvs/quantum/bin/activate
-sudo nice -n -20 su -c "python $1" archer

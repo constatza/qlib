@@ -31,6 +31,7 @@ np.random.seed(1)
 
 b = np.ones(size)
 A = np.random.rand(size, size)
+A = np.eye(size)
 # A[ np.abs(A) < tol ] = 0
 
 

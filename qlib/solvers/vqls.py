@@ -137,7 +137,7 @@ class HadamardTest:
 class VQLS:
 
     def __init__(self, A, b, projector=LocalProjector, ansatz=None, 
-                 backend=backend, num_shots=1):
+                 backend=backend, optimizer=None, num_shots=1):
         self.matrix = A
         self.target = b
         self.lcu = LinearDecompositionOfUnitaries(A)
@@ -155,45 +155,39 @@ class VQLS:
         self.num_unitaries = None
         self.num_jobs = None
         self.solution = None
+        self.optimizer = optimizer
         self.construct_circuits()
 
     def construct_circuits(self):
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
-        circuits = np.empty((num_qubits, num_unitaries, num_unitaries),
-                            dtype=object)
+        circuits = {}
         for j in range(num_qubits):
             for m in range(num_unitaries):
-                for n in range(num_unitaries):
-                    circuits[j, m, n] = self.construct_term(m, n, j=j)
+                for n in range(m, num_unitaries):
+                    circuits[(j, m, n)] = self.construct_term(m, n, j=j)
 
         self.circuits = circuits
-        self.num_jobs = circuits.size*2
+        self.num_jobs = j*m*n*2
         return self
 
     def construct_term(self, mu, nu, j):
-        opt = 3
 
         operation = self.projector.get_circuit(mu, nu, j=j)
 
         hadamard_real = HadamardTest(operation, imaginary=False).get_circuit()
         hadamard_imag = HadamardTest(operation, imaginary=True).get_circuit()
 
-        transpiled = transpile([hadamard_real, hadamard_imag],
-                                      backend=backend,
-                                      optimization_level=opt)
-
-        return transpiled
-        # return (hadamard_real, hadamard_imag)
+        return (hadamard_real, hadamard_imag)
 
     def run_circuits(self, values):
         experiments = []
 
-        for pair in self.circuits.flatten().tolist():
+        for key, pair in self.circuits.items():
             for qc in pair:
-
+                qc.name = key
                 experiments.append(qc.assign_parameters(values))
-        # binds = {p: v for (p, v) in zip(qc.parameters, values)}
+                
         self.job = execute(experiments,
                            backend=self.backend)
 
@@ -224,22 +218,36 @@ class VQLS:
 
         # Jobs
         self.run_circuits(values)
-        num_jobs_beta = 2*L**2
+        num_jobs_beta = (L**2 - L) + 2*L
 
         # Beta results
         index_jobs_beta = (0, num_jobs_beta)
         beta_p0 = self.get_results(index_jobs_beta)
         beta_p0 = 2*beta_p0 - 1
-        betas = beta_p0[:-1:2] + 1j*beta_p0[1::2]
-        betas = betas.reshape((L, L))
+        betas_unique = beta_p0[:-1:2] + 1j*beta_p0[1::2]
+        betas = np.zeros((L, L), dtype=np.complex128)
+        for m in range(L):
+            for l in range(m, L):
+                betas[m, l] = betas_unique[m + l]
+                if l > m:
+                    betas[l, m] = betas_unique[m + l].conj()
+                
+        
 
         # delta results
         num_jobs_delta = num_working_qubits*num_jobs_beta
         index_jobs_delta = (num_jobs_beta, num_jobs_beta + num_jobs_delta)
         delta_p0 = self.get_results(index_jobs_delta)
         delta_p0 = 2*delta_p0 - 1
-        deltas = delta_p0[:-1:2] + 1j*delta_p0[1::2]
-        deltas = deltas.reshape((num_working_qubits, L, L))
+        deltas_unique = delta_p0[:-1:2] + 1j*delta_p0[1::2]
+        deltas = np.zeros((num_working_qubits, L, L), dtype=np.complex128)
+        for j in range(num_working_qubits):
+            for m in range(L):
+                for l in range(m, L):
+                    experiment_id = j + m + l
+                    deltas[j, m, l] = deltas_unique[experiment_id]
+                    if l > m:
+                        deltas[j, l, m] = deltas_unique[experiment_id].conj()
 
         delta_sum = coeffs.dot( deltas.sum(axis=0)
                                ).dot(coeffs.conj().T).real[0, 0]

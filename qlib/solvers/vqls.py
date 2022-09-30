@@ -161,14 +161,17 @@ class VQLS:
     def construct_circuits(self):
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
-        circuits = {}
+        circuits = []
         for j in range(num_qubits):
             for m in range(num_unitaries):
-                for n in range(m, num_unitaries):
-                    circuits[(j, m, n)] = self.construct_term(m, n, j=j)
+                for n in range(m+1):
+                    real, imag = self.construct_term(m, n, j=j)
+                    circuits.append(real)
+                    circuits.append(imag)
 
-        self.circuits = circuits
-        self.num_jobs = j*m*n*2
+        
+        self.circuits = transpile(circuits, backend=self.backend)
+        self.num_jobs = len(self.circuits)
         return self
 
     def construct_term(self, mu, nu, j):
@@ -177,19 +180,22 @@ class VQLS:
 
         hadamard_real = HadamardTest(operation, imaginary=False).get_circuit()
         hadamard_imag = HadamardTest(operation, imaginary=True).get_circuit()
+        
+        hadamard_real.name = f"{j}, {mu}, {nu}, real"
+        hadamard_imag.name = f"{j}, {mu}, {nu}, imag"
 
-        return (hadamard_real, hadamard_imag)
+        return transpile([hadamard_real, hadamard_imag], 
+                         backend=self.backend)
 
     def run_circuits(self, values):
         experiments = []
 
-        for key, pair in self.circuits.items():
-            for qc in pair:
-                qc.name = key
-                experiments.append(qc.assign_parameters(values))
+        for i in range(self.num_jobs):
+            experiment = self.circuits[i].assign_parameters(values)
+            experiments.append(experiment)
                 
         self.job = execute(experiments,
-                           backend=self.backend)
+                           backend=self.backend, optimization_level=0)
 
         return self
 
@@ -227,12 +233,10 @@ class VQLS:
         betas_unique = beta_p0[:-1:2] + 1j*beta_p0[1::2]
         betas = np.zeros((L, L), dtype=np.complex128)
         for m in range(L):
-            for l in range(m, L):
+            for l in range(m+1):
                 betas[m, l] = betas_unique[m + l]
-                if l > m:
+                if l < m:
                     betas[l, m] = betas_unique[m + l].conj()
-                
-        
 
         # delta results
         num_jobs_delta = num_working_qubits*num_jobs_beta
@@ -243,17 +247,17 @@ class VQLS:
         deltas = np.zeros((num_working_qubits, L, L), dtype=np.complex128)
         for j in range(num_working_qubits):
             for m in range(L):
-                for l in range(m, L):
+                for l in range(m+1):
                     experiment_id = j + m + l
                     deltas[j, m, l] = deltas_unique[experiment_id]
-                    if l > m:
+                    if l < m:
                         deltas[j, l, m] = deltas_unique[experiment_id].conj()
 
-        delta_sum = coeffs.dot( deltas.sum(axis=0)
+        delta_sum = coeffs.dot( betas + deltas.sum(axis=0)
                                ).dot(coeffs.conj().T).real[0, 0]
         beta_norm = coeffs.dot(betas).dot(coeffs.conj().T).real[0, 0]
 
-        self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
+        self.cost = 1 - delta_sum/num_working_qubits/2
         return np.sqrt(self.cost)
 
     def optimal_state(self, values_opt):

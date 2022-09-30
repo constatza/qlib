@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 """
 Created on Tue Jul  5 14:56:15 2022
 
@@ -23,19 +24,20 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-num_qubits = 2
+num_qubits = 3
 size = 2**num_qubits
 num_layers = 3
 num_shots = 2**11
 tol = 1e-8
 
-options = {'maxiter': 30,
+options = {'maxiter': 100,
            'tol': tol,
     'disp': True}
 
 b = np.ones(size)
+np.random.seed(1)
 A = np.random.rand(size, size)
-
+A = np.eye(size)
 # filepath = "/home/archer/code/quantum/data/"
 # matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
 #     ['stiffnessMatricesData'].transpose(2, 0, 1).astype(np.float64)
@@ -49,3 +51,4 @@ vqls = VQLS(A, b,
             ansatz=FixedAnsatz(num_qubits, num_layers=3))
 xa = vqls.solve(optimizer='COBYLA', options=options).get_solution(scaled=True)
 
+ba = xa.dot(A)

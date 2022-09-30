@@ -10,7 +10,7 @@ import numpy as np
 from qiskit import Aer, QuantumCircuit
 from qiskit.extensions import UnitaryGate
 from qlib.utils import states2qubits
-from qlib.solvers.vqls import VQLS
+from qlib.solvers.vqls import VQLS, FixedAnsatz
 from scipy.io import loadmat
 
 backend = Aer.get_backend('statevector_simulator',
@@ -47,7 +47,7 @@ x = np.linalg.solve(A, b)
 
 
 x = np.linalg.solve(A, b)
-vqls = VQLS(A, b)
+vqls = VQLS(A, b, ansatz=FixedAnsatz(num_qubits, num_layers=3))
 
 xa = vqls.solve(optimizer='COBYLA',  
                       options=options).get_solution(scaled=True)

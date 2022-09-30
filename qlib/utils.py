@@ -23,10 +23,12 @@ circuit.append(unitary, register)
 
 
 class LinearDecompositionOfUnitaries:
+    """Decomposes a matrix A with spectral_norm(A) <=1 to
+    a sum of unitary matrices. Stores the appropriate values."""
     
     def __init__(self, matrix):
         self.matrix = matrix
-        self.matrix_norm = norm(matrix, ord=2)
+        self.matrix_norm = norm(matrix)
         self.matrix_normalized = self.matrix/self.matrix_norm
         matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
         self.decomposition = np.array(matrices)
@@ -35,9 +37,13 @@ class LinearDecompositionOfUnitaries:
                       for i, matrix in enumerate(matrices)]
         self.num_unitaries = len(self.gates)
 
-    def test_sum(self):
+    def valid_decomposition(self):
         
-        return np.sum(self.coeffs * self.decomposition, axis=0)
+        unitary_sum = np.sum(self.coeffs[:, None, None] * self.decomposition, axis=0)
+        if np.allclose(unitary_sum, self.matrix_normalized):
+            return True
+        else:
+            return False
 
 
 def unitary_from_hermitian(hermitian: np.ndarray, tol=1e-8):
@@ -45,19 +51,20 @@ def unitary_from_hermitian(hermitian: np.ndarray, tol=1e-8):
     two unitary operators
     """
 
-    identity = np.eye(N=hermitian.shape[0], dtype=np.float64)
-
-    term = 1j * sqrtm(identity - hermitian @ hermitian)
-    term.real[ np.abs(term.real) < tol ] = 0
-    term.imag[ np.abs(term.imag) < tol ] = 0
-    return hermitian + term, hermitian - term
+    identity = np.eye(N=hermitian.shape[0], dtype=np.complex128)
+    
+    matrix = identity - hermitian @ hermitian
+    sqrt_mat = 1j*sqrtm(matrix)
+    F1 = hermitian + sqrt_mat
+    F2 = hermitian - sqrt_mat
+    return F1, F2
 
 
 def linear_decomposition_of_unitaries(array: np.ndarray):
     """ Decompose an array with det(array)<=1
     into a linear combination of unitaries
     
-    :Input: ndarray with norm(array)<=1
+    :Input: ndarray with spectral_norm(array)<=1
     :Returns: a list of unitary arrays 
         [F1, F2, F3, F4]
     
@@ -69,11 +76,10 @@ def linear_decomposition_of_unitaries(array: np.ndarray):
     A = 1/2 (F1 + F2 + iF3 + iF4)
     
     """
-    hermitian = np.allclose(array, array.conj().T)
-    if hermitian:
-        symmetric_part = 0.5*(array + array.conj().T)
-        F1, F2 = unitary_from_hermitian(symmetric_part)
-        g = F1.dot( F1.conj().T)
+    array = array.astype(np.complex128)
+    is_hermitian = np.allclose(array, array.conj().T)
+    if is_hermitian:
+        F1, F2 = unitary_from_hermitian(array)
         return (F1, F2), (.5, .5)
     
     else:
@@ -107,7 +113,7 @@ def states2qubits(num_states: int):
     return int(np.ceil(np.log2(num_states) ))
 
 
-def dagger(matrix: np.ndarray):
+def adjoint(matrix: np.ndarray):
 
     return matrix.conj().T
 

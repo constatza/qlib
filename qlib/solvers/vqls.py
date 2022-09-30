@@ -7,14 +7,12 @@ Created on Wed Mar 23 12:12:34 2022
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.optimize import minimize
-
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit,\
     transpile, Aer, execute
 from qiskit.circuit import ParameterVector
 from qlib.utils import LinearDecompositionOfUnitaries, \
-    unitary_from_column_vector, draw, states2qubits
+    unitary_from_column_vector, states2qubits
 
 
 backend = Aer.get_backend('statevector_simulator')

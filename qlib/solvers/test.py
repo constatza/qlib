@@ -9,7 +9,8 @@ Created on Tue Jul  5 14:56:15 2022
 import numpy as np
 from qiskit import Aer, QuantumCircuit
 from qiskit.extensions import UnitaryGate
-from qlib.utils import unitary_from_hermitian, linear_decomposition_of_unitaries
+from qlib.utils import unitary_from_hermitian, linear_decomposition_of_unitaries,\
+    LinearDecompositionOfUnitaries
 from scipy.io import loadmat
 
 backend = Aer.get_backend('statevector_simulator',
@@ -35,20 +36,23 @@ A = np.random.rand(size, size)
 
 
 
-A = 0.5*(A + A.conj().T) / np.linalg.norm(A)
+
 
 
 filepath = "/home/archer/code/quantum/data/"
 matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
     ['stiffnessMatricesData'].transpose(2, 0, 1).astype(np.float64)
     
-A = matrices[0]
+A = matrices[np.random.randint(0, 999)]
+A = 0.5*(A + A.conj().T) 
 x = np.linalg.solve(A, b)
 
 
 
-(F1, F2), c = linear_decomposition_of_unitaries(A)
 
+lcu = LinearDecompositionOfUnitaries(A)
+print(lcu.valid_decomposition())
+F1 = lcu.decomposition[0]
 g = F1 @ F1.conj().T
 
 U = UnitaryGate(F1, label="why qiskit?")

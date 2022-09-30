@@ -44,10 +44,9 @@ options = {'maxiter': 50,
 
 # bounds = [(0, 2*np.pi) for _ in range(vqls.ansatz.num_parameters)]
 
-for A in matrices:
+for A in matrices[0:2]:
     x = np.linalg.solve(A, b)
     vqls = VQLS(A, b)
-
 
     xa = vqls.solve(optimizer='COBYLA',  
                           options=options).get_solution(scaled=True)

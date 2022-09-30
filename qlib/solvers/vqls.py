@@ -184,8 +184,7 @@ class VQLS:
         hadamard_real.name = f"{j}, {mu}, {nu}, real"
         hadamard_imag.name = f"{j}, {mu}, {nu}, imag"
 
-        return transpile([hadamard_real, hadamard_imag], 
-                         backend=self.backend)
+        return (hadamard_real, hadamard_imag)
 
     def run_circuits(self, values):
         experiments = []
@@ -245,19 +244,21 @@ class VQLS:
         delta_p0 = 2*delta_p0 - 1
         deltas_unique = delta_p0[:-1:2] + 1j*delta_p0[1::2]
         deltas = np.zeros((num_working_qubits, L, L), dtype=np.complex128)
+        
+        experiment_id = 0
         for j in range(num_working_qubits):
             for m in range(L):
                 for l in range(m+1):
-                    experiment_id = j + m + l
                     deltas[j, m, l] = deltas_unique[experiment_id]
                     if l < m:
                         deltas[j, l, m] = deltas_unique[experiment_id].conj()
-
-        delta_sum = coeffs.dot( betas + deltas.sum(axis=0)
+                    experiment_id += 1
+                    
+        delta_sum = coeffs.dot(deltas.sum(axis=0)
                                ).dot(coeffs.conj().T).real[0, 0]
         beta_norm = coeffs.dot(betas).dot(coeffs.conj().T).real[0, 0]
 
-        self.cost = 1 - delta_sum/num_working_qubits/2
+        self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return np.sqrt(self.cost)
 
     def optimal_state(self, values_opt):

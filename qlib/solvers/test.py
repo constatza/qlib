@@ -24,7 +24,7 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-num_qubits = 2
+num_qubits = 3
 size = 2**num_qubits
 num_layers = 3
 num_shots = 2**11
@@ -37,7 +37,6 @@ options = {'maxiter': 100,
 b = np.ones(size)
 np.random.seed(1)
 A = np.random.rand(size, size)
-A = np.eye(size)
 # filepath = "/home/archer/code/quantum/data/"
 # matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
 #     ['stiffnessMatricesData'].transpose(2, 0, 1).astype(np.float64)

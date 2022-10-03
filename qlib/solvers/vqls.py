@@ -282,7 +282,7 @@ class VQLS:
                 raise ValueError("No optimizer")
 
         parameters0 = np.random.rand(self.ansatz.num_parameters)
-        parameters0 = np.zeros(self.ansatz.num_parameters)
+
         print("# Optimizing")
         result = minimize(self.local_cost,
                     method=optimizer,

@@ -29,12 +29,12 @@ num_qubits = 4
 size = 2**num_qubits
 num_layers = 7
 num_shots = 2**11
-tol = 1e-8
+tol = 1e-4
 np.random.seed(1)
 
 options = {'maxiter': 200,
-           'tol': tol,
-    'disp': True}
+           'gtol': tol,
+    'disp': 1}
 
 b = np.ones(size)
 np.random.seed(1)
@@ -69,7 +69,4 @@ opt = SciPyOptimizer(method='cobyla', options=options, callback=vqls.print_cost)
 opt = CG()
 
 xa = vqls.solve(optimizer=opt, options=options).get_solution(scaled=True)
-
-
-
 ba = xa.dot(A)

@@ -271,7 +271,7 @@ class VQLS:
 
         return np.asarray(state).real
 
-    def fun_callback(self, x):
+    def print_cost(self, x):
         print("{:.5e}".format(self.cost))  
     
     def solve(self, optimizer=None, **kwargs):
@@ -280,15 +280,21 @@ class VQLS:
                 optimizer = self.optimizer
             except:
                 raise ValueError("No optimizer")
+        
+       
+            
 
         parameters0 = np.random.rand(self.ansatz.num_parameters)
 
         print("# Optimizing")
-        result = minimize(self.local_cost,
-                    method=optimizer,
-                    x0=parameters0,
-                    callback=self.fun_callback,
-                    **kwargs)
+        if type(optimizer) is str:
+            result = minimize(self.local_cost,
+                        method=optimizer,
+                        x0=parameters0,
+                        callback=self.print_cost,
+                        **kwargs)
+        else:
+            result = optimizer.minimize(self.local_cost, parameters0)
         print("# End")
 
         self.solution = self.optimal_state(result.x)

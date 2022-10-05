@@ -13,6 +13,7 @@ from qiskit.extensions import UnitaryGate
 from qlib.utils import states2qubits
 from qlib.solvers.vqls import VQLS, FixedAnsatz
 from scipy.io import loadmat
+from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG
 
 backend = Aer.get_backend('statevector_simulator',
                           max_parallel_threads=4,
@@ -24,7 +25,7 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-num_qubits = 2
+num_qubits = 4
 size = 2**num_qubits
 num_layers = 7
 num_shots = 2**11
@@ -56,9 +57,19 @@ A = 0.5*(A + A.conj().T)
 
 x = np.linalg.solve(A, b)
 
+
+
+
 vqls = VQLS(A, b, 
             backend=backend, 
             ansatz=FixedAnsatz(states2qubits(A.shape[0]), num_layers=num_layers))
-xa = vqls.solve(optimizer='COBYLA', options=options).get_solution(scaled=True)
+
+opt = SciPyOptimizer(method='cobyla', options=options, callback=vqls.print_cost)
+# opt = SPSA()
+opt = CG()
+
+xa = vqls.solve(optimizer=opt, options=options).get_solution(scaled=True)
+
+
 
 ba = xa.dot(A)

@@ -7,6 +7,7 @@ Created on Wed Mar 23 12:12:34 2022
 """
 
 import numpy as np
+from time import time
 from scipy.optimize import minimize
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit,\
     transpile, Aer, execute
@@ -137,7 +138,7 @@ class HadamardTest:
 class VQLS:
 
     def __init__(self, A, b, projector=LocalProjector, ansatz=None, 
-                 backend=backend, optimizer=None, num_shots=1):
+                 backend=backend, optimizer=None, optimization_level=3, num_shots=1):
         self.matrix = A
         self.target = b
         self.lcu = LinearDecompositionOfUnitaries(A)
@@ -150,6 +151,7 @@ class VQLS:
         self.projector = projector(self.lcu, self.ansatz, self.Ub)
         self.num_working_qubits = self.projector.num_working_qubits
         self.backend = backend
+        self.optimization_level = optimization_level
         self.num_shots = num_shots
         self.circuits = None
         self.num_unitaries = None
@@ -170,7 +172,7 @@ class VQLS:
                     circuits.append(imag)
 
         
-        self.circuits = transpile(circuits, backend=self.backend)
+        self.circuits = transpile(circuits, backend=self.backend, optimization_level=self.optimization_level)
         self.num_jobs = len(self.circuits)
         return self
 
@@ -193,8 +195,7 @@ class VQLS:
             experiment = self.circuits[i].assign_parameters(values)
             experiments.append(experiment)
                 
-        self.job = execute(experiments,
-                           backend=self.backend, optimization_level=0)
+        self.job = self.backend.run(experiments)
 
         return self
 
@@ -287,6 +288,7 @@ class VQLS:
         parameters0 = np.random.rand(self.ansatz.num_parameters)
 
         print("# Optimizing")
+        t1 = time()
         if type(optimizer) is str:
             result = minimize(self.local_cost,
                         method=optimizer,
@@ -296,7 +298,8 @@ class VQLS:
         else:
             result = optimizer.minimize(self.local_cost, parameters0)
         print("# End")
-
+        t2 = time()
+        print(f"Time: {t2-t1:.3f}s")
         self.solution = self.optimal_state(result.x)
         return self
     

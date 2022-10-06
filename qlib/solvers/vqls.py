@@ -140,8 +140,14 @@ class HadamardTest:
 
 class VQLS:
 
-    def __init__(self, A, b, projector=LocalProjector, ansatz=None, 
-                 backend=backend, optimizer=None, optimization_level=3, num_shots=1):
+    def __init__(self, A, b, 
+                 initial_parameters=None,
+                 projector=LocalProjector, 
+                 ansatz=None, 
+                 backend=backend, 
+                 optimizer=None, 
+                 optimization_level=3, 
+                 num_shots=1):
         self.matrix = A
         self.target = b
         self.lcu = LinearDecompositionOfUnitaries(A)
@@ -159,9 +165,11 @@ class VQLS:
         self.num_shots = num_shots
         self.circuits = None
         self.num_unitaries = None
-        self.num_jobs = None
+        self.num_jobs 
+        self.result = None
         self.solution = None
         self.optimizer = optimizer
+        self.initial_parameters = initial_parameters
         self.construct_circuits()
 
     def construct_circuits(self):
@@ -200,7 +208,7 @@ class VQLS:
         experiments = []
 
         for i in range(self.num_jobs):
-            experiment = self.circuits[i].assign_parameters(values)
+            experiment = self.circuits[i].bind_parameters(values)
             experiments.append(experiment)
                 
         self.job = self.backend.run(experiments)
@@ -290,17 +298,17 @@ class VQLS:
             except:
                 raise ValueError("No optimizer")
         
-       
+        if self.initial_parameters is None:
+            parameters0 = np.random.rand(self.ansatz.num_parameters)
+        else:
+            parameters0 = self.initial_parameters
             
-
-        parameters0 = np.random.rand(self.ansatz.num_parameters)
-
         print("# Optimizing")
         t1 = time()
         if type(optimizer) is str:
             result = minimize(self.local_cost,
                         method=optimizer,
-                        x0=parameters0,
+                        initial_parameters=parameters0,
                         callback=self.print_cost,
                         **kwargs)
         else:
@@ -308,6 +316,7 @@ class VQLS:
         print("# End")
         t2 = time()
         print_time(t1, t2)
+        self.result = result
         self.solution = self.optimal_state(result.x)
         return self
     

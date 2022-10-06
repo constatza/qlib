@@ -124,7 +124,7 @@ def normalized(matrix: np.ndarray, return_norm=False):
 
 
 def print_time(t1, t2):
-    print(f"Time: {t2-t1:.3f}s")
+    print(f"# Time: {t2-t1:.3f}s")
 
 def draw(qc):
     fig, ax = plt.subplots(figsize=(15, 10))

@@ -25,12 +25,12 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     precision="single")
 num_qubits = 4
 size = 2**num_qubits
-num_layers = 7
+num_layers = 8
 num_shots = 2**11
 tol = 1e-6
 np.random.seed(1)
 
-options = {'maxiter': 200,
+options = {'maxiter': 300,
            'tol': tol,
     'disp': 1}
 

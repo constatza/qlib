@@ -9,10 +9,10 @@ Created on Wed Mar 23 12:12:34 2022
 import numpy as np
 from time import time
 from scipy.optimize import minimize
-from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit,\
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, \
     transpile, Aer, execute
 from qiskit.circuit import ParameterVector
-from qlib.utils import LinearDecompositionOfUnitaries, \
+from qlib.utils import LinearDecompositionOfUnitaries, print_time, \
     unitary_from_column_vector, states2qubits
 
 
@@ -22,13 +22,15 @@ backend = Aer.get_backend('statevector_simulator')
 
 class FixedAnsatz:
 
-    def __init__(self, num_qubits, num_layers=1):
+    def __init__(self, num_qubits, num_layers=1, optimization_level=3, backend=None):
         self.num_qubits = num_qubits
         self.num_layers = num_layers
         self.num_parameters = 2*num_layers * \
             (num_qubits//2 + (num_qubits-1)//2) + num_qubits
         self.alpha = ParameterVector('a', self.num_parameters)
         self.qc = QuantumCircuit(num_qubits, name='V')
+        self.optimization_level = optimization_level
+        self.backend = backend
         self.construct_circuit()
 
     def construct_circuit(self):
@@ -53,6 +55,9 @@ class FixedAnsatz:
                 qc.ry(alpha[ia], qubits[iz])
                 qc.ry(alpha[ia+1], qubits[iz+1])
                 ia += 2
+                
+        self.qc = transpile(qc, optimization_level=self.optimization_level, 
+                            backend=self.backend)
 
     def get_circuit(self):
         return self.qc
@@ -77,8 +82,6 @@ class LocalProjector:
         A_mu = self.lcu.gates[mu].control(1, label=f'$A_{mu}$')
         A_nu = self.lcu.gates[nu].adjoint().control(1,
                                                     label=f'$A^{inv:s}_{nu:d}$')
-
-        num_qubits = A_mu.num_qubits
 
         qc = QuantumCircuit(control_reg, working_reg, name='$\delta_{\mu \nu}$')
 
@@ -144,7 +147,8 @@ class VQLS:
         self.lcu = LinearDecompositionOfUnitaries(A)
         self.Ub = unitary_from_column_vector(b)
         if ansatz is None:
-            self.ansatz = FixedAnsatz(states2qubits(A.shape[0]))
+            self.ansatz = FixedAnsatz(states2qubits(A.shape[0]), 
+                                                    backend=backend)
         else:
             self.ansatz = ansatz
             
@@ -170,9 +174,13 @@ class VQLS:
                     real, imag = self.construct_term(m, n, j=j)
                     circuits.append(real)
                     circuits.append(imag)
-
         
+        t1 = time()
+        print("# Transpiling")
         self.circuits = transpile(circuits, backend=self.backend, optimization_level=self.optimization_level)
+        print("# End")
+        t2 = time()
+        print_time(t1, t2)
         self.num_jobs = len(self.circuits)
         return self
 
@@ -299,7 +307,7 @@ class VQLS:
             result = optimizer.minimize(self.local_cost, parameters0)
         print("# End")
         t2 = time()
-        print(f"Time: {t2-t1:.3f}s")
+        print_time(t1, t2)
         self.solution = self.optimal_state(result.x)
         return self
     

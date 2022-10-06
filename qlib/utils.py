@@ -119,11 +119,12 @@ def adjoint(matrix: np.ndarray):
 
 
 def normalized(matrix: np.ndarray, return_norm=False):
-
     matrix_norm = norm(matrix, ord=2)
-
     return matrix/matrix_norm
 
+
+def print_time(t1, t2):
+    print(f"Time: {t2-t1:.3f}s")
 
 def draw(qc):
     fig, ax = plt.subplots(figsize=(15, 10))

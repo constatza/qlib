@@ -14,53 +14,120 @@ from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, \
 from qiskit.circuit import ParameterVector
 from qlib.utils import LinearDecompositionOfUnitaries, print_time, \
     unitary_from_column_vector, states2qubits
-
+from qiskit.circuit.library import RealAmplitudes
 
 backend = Aer.get_backend('statevector_simulator')
 
 
 
-class FixedAnsatz:
+class Ansatz:
 
-    def __init__(self, num_qubits, num_layers=1, optimization_level=3, backend=None):
+    def __init__(self, 
+                 num_qubits, num_layers=1, 
+                 optimization_level=3, 
+                 backend=None):
+        
         self.num_qubits = num_qubits
         self.num_layers = num_layers
-        self.num_parameters = 2*num_layers * \
-            (num_qubits//2 + (num_qubits-1)//2) + num_qubits
-        self.alpha = ParameterVector('a', self.num_parameters)
-        self.qc = QuantumCircuit(num_qubits, name='V')
+        self.num_parameters = None
+        self.parameters = None
+        self.circuit = None
         self.optimization_level = optimization_level
         self.backend = backend
         self.construct_circuit()
-
+        self.transpile_circuit()
+    
+    def construct_ansatz(self):
+        self.construct_circuit()
+        self.num_parameters = self.circuit.num_parameters
+        self.parameters = self.circuit.parameters
+        self.transpile_circuit()
+    
     def construct_circuit(self):
-        qc = self.qc
-        qubits = qc.qubits
-        alpha = self.alpha
-
-        ia = 0
-        for iz in range(self.num_qubits):
-            qc.ry(alpha[ia], iz)
-            ia += 1
-
-        for _ in range(self.num_layers):
-            for iz in range(0, self.num_qubits-1, 2):
-                qc.cz(iz, iz+1)
-                qc.ry(alpha[ia], qubits[iz])
-                qc.ry(alpha[ia+1], qubits[iz+1])
-                ia += 2
-
-            for iz in range(1, self.num_qubits-1, 2):
-                qc.cz(iz, iz+1)
-                qc.ry(alpha[ia], qubits[iz])
-                qc.ry(alpha[ia+1], qubits[iz+1])
-                ia += 2
-                
-        self.qc = transpile(qc, optimization_level=self.optimization_level, 
+        pass
+    
+    def transpile_circuit(self):
+        self.circuit = transpile(self.circuit, 
+                            optimization_level=self.optimization_level, 
                             backend=self.backend)
 
     def get_circuit(self):
-        return self.qc
+        return self.circuit
+
+
+
+class RealAmplitudesAnsatz(Ansatz):
+    
+    def __init__(self, 
+                 num_qubits, 
+                 num_layers=1, 
+                 optimization_level=3, 
+                 backend=None):
+        
+        super().__init__(num_qubits,
+                         num_layers,
+                         optimization_level,
+                         backend())
+        
+        self.construct_ansatz()
+    
+   
+        
+    def contruct_circuit(self):
+        self.circuit = RealAmplitudes(num_qubits=self.num_qubits, 
+                                 reps=self.num_layers)
+        
+    
+        
+
+class FixedAnsatz(Ansatz):
+
+    def __init__(self, num_qubits, 
+                 num_layers=1, 
+                 optimization_level=3, 
+                 backend=None):
+        
+        super().__init__(num_qubits, 
+                       num_layers, 
+                       optimization_level, 
+                       backend)
+        
+    
+        self.construct_ansatz()
+
+    def construct_circuit(self):
+        num_qubits =self.num_qubits
+        num_layers =self.num_layers
+        
+        circuit = QuantumCircuit(num_qubits, name='V')
+        num_parameters = 2*num_layers * \
+            (num_qubits//2 + (num_qubits-1)//2) + num_qubits
+        qubits = circuit.qubits
+        parameters = ParameterVector('a', num_parameters)
+
+        ia = 0
+        for iz in range(num_qubits):
+            circuit.ry(parameters[ia], iz)
+            ia += 1
+
+        for _ in range(num_layers):
+            for iz in range(0, num_qubits-1, 2):
+                circuit.cz(iz, iz+1)
+                circuit.ry(parameters[ia], qubits[iz])
+                circuit.ry(parameters[ia+1], qubits[iz+1])
+                ia += 2
+
+            for iz in range(1, num_qubits-1, 2):
+                circuit.cz(iz, iz+1)
+                circuit.ry(parameters[ia], qubits[iz])
+                circuit.ry(parameters[ia+1], qubits[iz+1])
+                ia += 2
+                
+        self.circuit = circuit
+
+    def get_circuit(self):
+        return self.circuit
+
 
 
 class LocalProjector:
@@ -84,8 +151,12 @@ class LocalProjector:
                                                     label=f'$A^{inv:s}_{nu:d}$')
 
         qc = QuantumCircuit(control_reg, working_reg, name='$\delta_{\mu \nu}$')
-
-        qc.append(self.ansatz.get_circuit(), working_reg)
+        try:
+            ansatz_circuit = self.ansatz.get_circuit()
+        except AttributeError:
+            ansatz_circuit = self.ansatz
+            
+        qc.append(ansatz_circuit, working_reg)
         qc.append(A_mu, [control_reg, *working_reg])
         if j > 0:
             qc.append(self.Ub.adjoint(), working_reg)

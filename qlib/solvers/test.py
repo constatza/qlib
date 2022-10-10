@@ -60,7 +60,7 @@ x = np.linalg.solve(A, b)
 ansatz = FixedAnsatz(states2qubits(A.shape[0]),
                    num_layers=num_layers)
 
-ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
+# ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
 vqls = VQLS(A, b, 
             backend=backend, 
             ansatz=ansatz)

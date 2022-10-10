@@ -67,7 +67,7 @@ class RealAmplitudesAnsatz(Ansatz):
         super().__init__(num_qubits,
                          num_layers,
                          optimization_level,
-                         backend())
+                         backend)
         
         self.construct_ansatz()
     
@@ -379,7 +379,7 @@ class VQLS:
         if type(optimizer) is str:
             result = minimize(self.local_cost,
                         method=optimizer,
-                        initial_parameters=parameters0,
+                        x0=parameters0,
                         callback=self.print_cost,
                         **kwargs)
         else:

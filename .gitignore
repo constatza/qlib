@@ -265,3 +265,4 @@ cython_debug/
 *.ipynb
 
 .venv
+nohup.*

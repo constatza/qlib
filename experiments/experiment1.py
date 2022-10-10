@@ -14,9 +14,9 @@ from qlib.solvers.vqls import VQLS, FixedAnsatz
 from qlib.utils import states2qubits
 
 backend = Aer.get_backend('statevector_simulator',
-                         optimization_level=3,
                          max_parallel_threads=4,
-                         max_parallel_experiments=4,
+                         max_parallel_experiments=20,
+                         max_job_size=4,
                          precision="single")
 
 # backend = qiskit.Aer.get_backend('qasm_simulator',

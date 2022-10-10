@@ -12,11 +12,12 @@ from qiskit import Aer
 from qlib.utils import states2qubits
 from qlib.solvers.vqls import VQLS, FixedAnsatz
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG
+from qiskit.circuit.library import RealAmplitudes
 
 backend = Aer.get_backend('statevector_simulator',
-                          max_parallel_threads=0,
+                          max_parallel_threads=4,
                           max_parallel_experiments=20,
-                          max_job_size=10,
+                          max_job_size=4,
                          precision="single")
 
 # backend = qiskit.Aer.get_backend('qasm_simulator',
@@ -56,17 +57,17 @@ b[14] = 100
 x = np.linalg.solve(A, b)
 
 
-
+ansatz = FixedAnsatz(states2qubits(A.shape[0]),
+                   num_layers=num_layers)
 
 vqls = VQLS(A, b, 
             backend=backend, 
-            ansatz=FixedAnsatz(states2qubits(A.shape[0]),
-                               num_layers=num_layers))
+            ansatz=ansatz)
 
 opt = SciPyOptimizer(method='cobyla', options=options, callback=vqls.print_cost)
 
 # opt = SPSA()
-# opt = CG()
+opt = CG()
 
 xa = vqls.solve(optimizer=opt, options=options).get_solution(scaled=True)
 ba = xa.dot(A)

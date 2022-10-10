@@ -165,7 +165,7 @@ class VQLS:
         self.num_shots = num_shots
         self.circuits = None
         self.num_unitaries = None
-        self.num_jobs 
+        self.num_jobs = None 
         self.result = None
         self.solution = None
         self.optimizer = optimizer

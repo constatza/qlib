@@ -7,11 +7,13 @@ Created on Thu Sep 29 15:38:15 2022
 """
 
 import numpy as np
+from scipy.optimize import Bounds
 from qiskit import Aer
 from scipy.io import loadmat
-
+from numpy.linalg import det, cond
 from qlib.solvers.vqls import VQLS, FixedAnsatz
 from qlib.utils import states2qubits
+from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, POWELL
 
 backend = Aer.get_backend('statevector_simulator',
                          max_parallel_threads=4,
@@ -26,7 +28,7 @@ backend = Aer.get_backend('statevector_simulator',
 
 num_layers = 3
 num_shots = 2**11
-tol = 1e-9
+tol = 1e-4
 
 filepath = "/home/archer/code/quantum/data/"
 matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
@@ -39,28 +41,38 @@ b[14] = 100
 
 
 
-options = {'maxiter': 200,
-           'tol': tol,
-    'disp': True}
 
-# bounds = [(0, 2*np.pi) for _ in range(vqls.ansatz.num_parameters)]
-
+options = {'maxfev': 1e4,
+           'ftol': 1e-4,
+           'disp': True}
 
 
-ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=20)
+# index = np.arange(8).reshape((-1, 1))
+
+ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=5)
+# bounds = [(0, 2*np.pi) for _ in range(ansatz.num_parameters)]
+# lb = np.zeros(ansatz.num_parameters)
+# ub = np.full(fill_value=2*np.pi, shape=ansatz.num_parameters)
+# bounds = Bounds(0, 2*np.pi)
+
+
 
 
 costs = []
 nfevs = []
 nits = []
 xs = []
-for A in matrices[0:2]:
-    A[ A==1 ] = 1e5
+for A in matrices[0:1]:
+    A[ A==1 ] = 2e5
+    # A = A[index, index.T]
+    # b = b[index].ravel()
+    # b[0] = 100
+    # not1 = np.argwhere(np.diag(A)!=1)
+    # B = A[not1, not1.T]
     x = np.linalg.solve(A, b)
     vqls = VQLS(A, b, ansatz=ansatz, backend=backend)
 
-    xa = vqls.solve(optimizer='COBYLA',  
-                          options=options).get_solution(scaled=True)
+    xa = vqls.solve(optimizer=POWELL(tol=1e-4, maxfev=1e4) ).get_solution(scaled=True)
     
     ba = xa.dot(A)
     
@@ -72,8 +84,8 @@ for A in matrices[0:2]:
 results_path = "/home/archer/code/quantum/experiments/results/"
 
 
-np.save(results_path + "costs", np.array(costs))
-np.save(results_path + "xs", np.array(xs))
-np.save(results_path + "nfevs", np.array(nfevs))
+np.save(results_path + "costs1", np.array(costs))
+np.save(results_path + "xs1", np.array(xs))
+np.save(results_path + "nfevs1", np.array(nfevs))
     
 

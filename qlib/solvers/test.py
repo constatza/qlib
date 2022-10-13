@@ -18,6 +18,7 @@ backend = Aer.get_backend('statevector_simulator',
                           max_parallel_threads=4,
                           max_parallel_experiments=20,
                           max_job_size=4,
+                          num_shots=1,
                          precision="single")
 
 # backend = qiskit.Aer.get_backend('qasm_simulator',
@@ -41,9 +42,9 @@ A = np.random.rand(size, size)
 
 A = 0.5*(A + A.conj().T) 
 
-filepath = "/home/archer/code/quantum/data/"
-matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
-    ['stiffnessMatricesData'].transpose(2, 0, 1)
+# filepath = "/home/archer/code/quantum/data/"
+# matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
+#     ['stiffnessMatricesData'].transpose(2, 0, 1)
     
 
     

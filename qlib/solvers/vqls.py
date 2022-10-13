@@ -23,7 +23,8 @@ backend = Aer.get_backend('statevector_simulator')
 class Ansatz:
 
     def __init__(self, 
-                 num_qubits, num_layers=1, 
+                 num_qubits, 
+                 num_layers=1, 
                  optimization_level=3, 
                  backend=None):
         
@@ -234,15 +235,19 @@ class VQLS:
         self.backend = backend
         self.optimization_level = optimization_level
         self.num_shots = num_shots
+        self.optimizer = optimizer
+        self.initial_parameters = initial_parameters
+        
         self.circuits = None
         self.num_unitaries = None
         self.num_jobs = None 
         self.result = None
         self.solution = None
-        self.optimizer = optimizer
-        self.initial_parameters = initial_parameters
-        self.construct_circuits()
+        self.solution_time = None
+        self.transpile_time = None
 
+        self.construct_circuits()
+        
     def construct_circuits(self):
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
@@ -256,12 +261,16 @@ class VQLS:
         
         t1 = time()
         print("# Transpiling")
-        self.circuits = transpile(circuits, backend=self.backend, optimization_level=self.optimization_level)
+        self.circuits = transpile(circuits, 
+                                  backend=self.backend, 
+                                  optimization_level=self.optimization_level)
         print("# End")
         t2 = time()
-        print_time(t1, t2)
+        transpile_time = t2 - t1
+        print_time(transpile_time)
+        self.transpile_time = transpile_time
         self.num_jobs = len(self.circuits)
-        return self
+  
 
     def construct_term(self, mu, nu, j):
 
@@ -277,7 +286,7 @@ class VQLS:
 
     def run_circuits(self, values):
         experiments = []
-
+  
         for i in range(self.num_jobs):
             experiment = self.circuits[i].bind_parameters(values)
             experiments.append(experiment)
@@ -352,8 +361,7 @@ class VQLS:
     def optimal_state(self, values_opt):
         backend = Aer.get_backend('statevector_simulator')
         qc = self.ansatz.get_circuit().assign_parameters(values_opt)
-        job = execute(qc, optimization_level=3,
-                      backend=backend)
+        job = execute(qc, backend=backend)
 
         state = job.result().get_statevector()
 
@@ -383,10 +391,13 @@ class VQLS:
                         callback=self.print_cost,
                         **kwargs)
         else:
-            result = optimizer.minimize(self.local_cost, parameters0)
+            result = optimizer.minimize(self.local_cost, 
+                                        parameters0)
         print("# End")
         t2 = time()
-        print_time(t1, t2)
+        solution_time = t2 - t1
+        print_time(solution_time)
+        self.solution_time = solution_time
         self.result = result
         self.solution = self.optimal_state(result.x)
         return self

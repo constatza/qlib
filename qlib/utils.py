@@ -98,7 +98,7 @@ def unitary_from_column_vector(coeffs: np.ndarray, *args, **kwargs):
     """
     k = coeffs.shape[0]
 
-    random_array = np.vstack([coeffs, np.random.rand(k-1, k)])
+    random_array = np.vstack([coeffs.ravel(), np.random.rand(k-1, k)])
     unitary, _ = qr(random_array.T)
     is_nonzero = unitary[:, 0].nonzero()[0][0]
     if unitary[is_nonzero, 0] * coeffs[is_nonzero] < 0:
@@ -123,8 +123,8 @@ def normalized(matrix: np.ndarray, return_norm=False):
     return matrix/matrix_norm
 
 
-def print_time(t1, t2):
-    print(f"# Time: {t2-t1:.3f}s")
+def print_time(t):
+    print(f"# Time: {t:.3f}s")
 
 def draw(qc):
     fig, ax = plt.subplots(figsize=(15, 10))

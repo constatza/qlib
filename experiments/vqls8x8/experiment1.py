@@ -21,29 +21,26 @@ backend = Aer.get_backend('statevector_simulator',
                          max_job_size=4,
                          precision="single")
 
-# backend = qiskit.Aer.get_backend('qasm_simulator',
-#                                     max_parallel_threads=8,
-#                                     max_parallel_experiments=16,
-#                                     precision="single")
 
 num_layers = 3
 num_shots = 2**11
 tol = 1e-4
 
-filepath = "/home/archer/code/quantum/data/"
-matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
+filepath = "/home/archer/code/quantum/data/8x8/"
+matrices = loadmat(filepath + "stiffnesses.mat")\
     ['stiffnessMatricesData'].transpose(2, 0, 1).astype(np.float64)
-solutions = loadmat(filepath + "solutionDataTraining.mat")['solutionData']
+solutions = loadmat(filepath + "solutions.mat")['solutionData']
 
-b = np.zeros((16,))
-b[7] = -100
-b[14] = 100 
+b = np.zeros((8,))
+b[3] = -100
+b[7] = 100
+
 
 
 
 
 options = {'maxfev': 1e4,
-           'ftol': 1e-4,
+           'ftol': tol,
            'disp': True}
 
 
@@ -54,7 +51,7 @@ ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=5)
 # lb = np.zeros(ansatz.num_parameters)
 # ub = np.full(fill_value=2*np.pi, shape=ansatz.num_parameters)
 # bounds = Bounds(0, 2*np.pi)
-
+#
 
 
 

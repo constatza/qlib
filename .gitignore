@@ -263,7 +263,5 @@ cython_debug/
 *.dat
 *.ipynb_checkpoints
 *.ipynb
-
 .venv
 nohup.*
-*.npy

@@ -67,7 +67,7 @@ exp = Experiment(matrices, b, optimizer, solver=VQLS, backend=backend)
 exp.run()
 
 
-results_path = r"/home/archer/code/quantum/experiments/vqls8x8/results/VQLS"
+results_path = r"/home/archer/code/quantum/experiments/vqls8x8/results/"
 
 exp.save(results_path)
 

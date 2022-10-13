@@ -475,7 +475,7 @@ class Experiment:
         """Save experiments as .npy binaries"""
         from datetime import datetime
         
-        suffix = datetime.today().strftime("%Y-%m-%d_%H-%M")
+        suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
         
         names = {"Solutions": self.solutions,
                 "SolutionTimes": self.solution_times,

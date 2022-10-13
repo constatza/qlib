@@ -123,8 +123,8 @@ def normalized(matrix: np.ndarray, return_norm=False):
     return matrix/matrix_norm
 
 
-def print_time(t):
-    print(f"# Time: {t:.3f}s")
+def print_time(t, msg=''):
+    print("# " + msg + f" Elapsed Time: {t:.2f}s")
 
 def draw(qc):
     fig, ax = plt.subplots(figsize=(15, 10))

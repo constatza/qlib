@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Thu Sep 29 15:38:15 2022
 
@@ -11,20 +12,23 @@ from scipy.optimize import Bounds
 from qiskit import Aer
 from scipy.io import loadmat
 from numpy.linalg import det, cond
-from qlib.solvers.vqls import VQLS, FixedAnsatz
+from qlib.solvers.vqls import VQLS, FixedAnsatz, Experiment
 from qlib.utils import states2qubits
-from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, POWELL
+from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, POWELL, COBYLA
 
-backend = Aer.get_backend('statevector_simulator',
-                         max_parallel_threads=4,
-                         max_parallel_experiments=20,
-                         max_job_size=4,
-                         precision="single")
+
+
 
 
 num_layers = 3
 num_shots = 2**11
-tol = 1e-4
+tol = 1e-1
+
+backend = Aer.get_backend('statevector_simulator',
+                         max_parallel_threads=4,
+                         max_job_size=4,
+                         max_parallel_experiments=10,
+                         precision="single")
 
 filepath = "/home/archer/code/quantum/data/8x8/"
 matrices = loadmat(filepath + "stiffnesses.mat")\
@@ -36,53 +40,35 @@ b[3] = -100
 b[7] = 100
 
 
+general_options = {}
 
 
-
-options = {'maxfev': 1e4,
+powell_options = {'maxfev': 1e4,
            'ftol': tol,
-           'disp': True}
+           }
 
+cobyla_options = {'maxiter': 0.8e4,
+                  'tol':tol,
+                  'disp': True}
 
 # index = np.arange(8).reshape((-1, 1))
 
-ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=5)
+ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
 # bounds = [(0, 2*np.pi) for _ in range(ansatz.num_parameters)]
 # lb = np.zeros(ansatz.num_parameters)
 # ub = np.full(fill_value=2*np.pi, shape=ansatz.num_parameters)
 # bounds = Bounds(0, 2*np.pi)
 #
+optimizer = POWELL(**powell_options) 
+optimizer = COBYLA(**cobyla_options, options=general_options)
 
 
-
-costs = []
-nfevs = []
-nits = []
-xs = []
-for A in matrices[0:1]:
-    A[ A==1 ] = 2e5
-    # A = A[index, index.T]
-    # b = b[index].ravel()
-    # b[0] = 100
-    # not1 = np.argwhere(np.diag(A)!=1)
-    # B = A[not1, not1.T]
-    x = np.linalg.solve(A, b)
-    vqls = VQLS(A, b, ansatz=ansatz, backend=backend)
-
-    xa = vqls.solve(optimizer=POWELL(tol=1e-4, maxfev=1e4) ).get_solution(scaled=True)
-    
-    ba = xa.dot(A)
-    
-    result = vqls.result
-    costs.append(result.fun)
-    nfevs.append(result.nfev)
-    xs.append(result.x)
- 
-results_path = "/home/archer/code/quantum/experiments/results/"
+exp = Experiment(matrices, b, optimizer, solver=VQLS, backend=backend)
+exp.run()
 
 
-np.save(results_path + "costs1", np.array(costs))
-np.save(results_path + "xs1", np.array(xs))
-np.save(results_path + "nfevs1", np.array(nfevs))
-    
+results_path = r"/home/archer/code/quantum/experiments/vqls8x8/results/VQLS"
+
+exp.save(results_path)
+
 

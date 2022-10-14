@@ -163,7 +163,7 @@ class LocalProjector:
 
 class HadamardTest:
     """Hadamard Test class for expectation values
-    
+
     Input:
         operator: must be already controlled!!
     """
@@ -206,8 +206,8 @@ class HadamardTest:
 class VQLS:
 
     def __init__(self,
-                 A,
-                 b,
+                 A=None,
+                 b=None,
                  initial_parameters=None,
                  projector=LocalProjector,
                  ansatz=None,
@@ -233,16 +233,20 @@ class VQLS:
         self.num_shots = num_shots
         self.optimizer = optimizer
         self.initial_parameters = initial_parameters
-
-        self.circuits = None
+        self.delete_results()
+        self.delete_matrix_attrs()
+        # self.construct_circuits()
+    
+    def delete_matrix_attrs(self):
         self.num_unitaries = None
         self.num_jobs = None
+        self.circuits = None
+        
+    def delete_results(self):
         self.result = None
         self.solution = None
         self.solution_time = None
         self.transpilation_time = None
-
-        self.construct_circuits()
 
     def construct_circuits(self):
         num_qubits = self.num_working_qubits + 1
@@ -255,16 +259,15 @@ class VQLS:
                     circuits.append(real)
                     circuits.append(imag)
 
-        
         print("# Transpiling")
         t0 = time()
         self.circuits = transpile(circuits,
                                   backend=self.backend,
                                   optimization_level=self.optimization_level)
 
-        transpile_time = time() - t0
-        print_time(transpile_time)
-        self.transpile_time = transpile_time
+        transpilation_time = time() - t0
+        print_time(transpilation_time)
+        self.transpilation_time = transpilation_time
         self.num_jobs = len(self.circuits)
 
     def construct_term(self, mu, nu, j):
@@ -351,7 +354,7 @@ class VQLS:
         beta_norm = coeffs.dot(betas).dot(coeffs.conj().T).real[0, 0]
 
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
-        return self.cost
+        return np.sqrt(self.cost)
 
     def optimal_state(self, values_opt):
         backend = Aer.get_backend('statevector_simulator')
@@ -376,7 +379,6 @@ class VQLS:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
         else:
             parameters0 = self.initial_parameters
-        
 
         print("# Optimizing")
         t0 = time()
@@ -407,6 +409,31 @@ class VQLS:
         else:
             xopt = x
         return xopt
+    
+    @property
+    def A(self):
+        return self.matrix
+    
+    @A.setter
+    def A(self, matrix):
+        self.delete_matrix_attrs()
+        self.delete_results()
+        self.matrix = matrix
+        self.lcu = LinearDecompositionOfUnitaries(matrix)
+        
+    @property
+    def b(self):
+        return self.target
+    
+    @b.setter
+    def b(self, target):
+        self.delete_results()
+        self.target = target
+        self.Ub = unitary_from_column_vector(target)
+        
+        
+    
+        
 
 
 class Experiment:
@@ -443,10 +470,10 @@ class Experiment:
         transpilation_times = []
         solution_times = []
         t0 = time()
-        for i,A in enumerate(self.matrices[0:1]):
+        for i, A in enumerate(self.matrices[:1]):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
-            
+
             solver = self.solver(A, b, backend=backend, optimizer=optimizer)
 
             solver.solve().get_solution(scaled=True)
@@ -458,11 +485,11 @@ class Experiment:
             solutions.append(solver.get_solution(scaled=True))
             transpilation_times.append(solver.transpilation_time)
             solution_times.append(solver.solution_time)
-            
 
+            print(f"# Function Value: {solver.result.fun:1.5e}")
             print_time(time() - t0, msg="Total Simulation")
 
-        self.func_costs = np.array(num_iterations)
+        self.func_costs = np.array(func_costs)
         self.num_iterations = np.array(num_iterations)
         self.num_func_evals = np.array(num_func_evals)
         self.solutions = np.array(solutions)
@@ -474,14 +501,14 @@ class Experiment:
     def save(self, results_path):
         """Save experiments as .npy binaries"""
         from datetime import datetime
-        
+
         suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
-        
+
         names = {"Solutions": self.solutions,
-                "SolutionTimes": self.solution_times,
-                "MinFunctionValues": self.func_costs,
-                "NumFunctionEvaluations": self.num_func_evals,
-                "NumIterations": self.num_iterations}
+                 "SolutionTimes": self.solution_times,
+                 "MinFunctionValues": self.func_costs,
+                 "NumFunctionEvaluations": self.num_func_evals,
+                 "NumIterations": self.num_iterations}
 
         for name, array in names.items():
             np.save(results_path + name + suffix, array)
@@ -489,4 +516,4 @@ class Experiment:
 
 if __name__ == '__main__':
 
-   pass
+    pass

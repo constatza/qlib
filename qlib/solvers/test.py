@@ -25,19 +25,31 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-num_qubits = 2
+num_qubits = 1
 size = 2**num_qubits
 num_layers = 8
 num_shots = 2**11
-tol = 1e-6
+tol = 1e-3
 # np.random.seed(1)
 
-options = {'maxiter': 10000,
-           'tol': tol}
 
-for _ in range(2):
-    b = np.ones(size)
-    np.random.seed(1)
+
+ansatz = FixedAnsatz(num_qubits,
+                   num_layers=num_layers)
+
+vqls = VQLS(backend=backend, 
+            ansatz=ansatz)
+
+options = {'maxiter': 8000,
+           'tol': tol,
+           'callback':vqls.print_cost}
+
+opt = COBYLA(**options)
+
+b = np.ones(size)
+vqls.b = b
+for i in range(2):
+   
     A = np.random.rand(size, size)
     
     
@@ -46,15 +58,13 @@ for _ in range(2):
     x = np.linalg.solve(A, b)
     
     
-    ansatz = FixedAnsatz(states2qubits(A.shape[0]),
-                       num_layers=num_layers)
+    
     
     # ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
-    vqls = VQLS(backend=backend, 
-                ansatz=ansatz)
+    
     vqls.A = A
-    vqls.b = b
-    opt = COBYLA(tol=1e-4)
+
+
     
     # opt = SPSA()
     # opt = CG()

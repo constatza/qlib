@@ -219,15 +219,12 @@ class VQLS:
         
         self.b = b
         self.A = A
-
-        if ansatz is None:
-            self.ansatz = FixedAnsatz(states2qubits(A.shape[0]),
-                                      backend=backend)
-        else:
-            self.ansatz = ansatz
-        
+        self.ansatz = ansatz
         self.projector = projector
-        self.num_working_qubits = self.ansatz.num_qubits
+        if ansatz is None:
+            self.num_working_qubits = None
+        else:
+            self.num_working_qubits = self.ansatz.num_qubits
         self.backend = backend
         self.optimization_level = optimization_level
         self.num_shots = num_shots
@@ -236,6 +233,7 @@ class VQLS:
         self.delete_results()
         self.delete_matrix_attrs()
         self._circuits_ready = False
+        self._projector_instance = None
 
     
     def delete_matrix_attrs(self):
@@ -252,7 +250,15 @@ class VQLS:
 
     def construct_circuits(self):
         self.check_linear_system_exists()
-        self.projector = self.projector(self.lcu, self.ansatz, self.Ub)
+        self._projector_instance = self.projector(self.lcu, self.ansatz, self.Ub)
+        
+        if self.ansatz is None:
+            num_working_qubits = states2qubits(self.b.shape[0])
+            self.num_working_qubits = num_working_qubits
+            self.ansatz = FixedAnsatz(num_working_qubits,
+                                      backend=backend)
+        
+        
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
         circuits = []
@@ -268,7 +274,6 @@ class VQLS:
         self.circuits = transpile(circuits,
                                   backend=self.backend,
                                   optimization_level=self.optimization_level)
-
         transpilation_time = time() - t0
         print_time(transpilation_time)
         self.transpilation_time = transpilation_time
@@ -278,7 +283,7 @@ class VQLS:
 
     def construct_term(self, mu, nu, j):
 
-        operation = self.projector.get_circuit(mu, nu, j=j)
+        operation = self._projector_instance.get_circuit(mu, nu, j=j)
 
         hadamard_real = HadamardTest(operation, imaginary=False).get_circuit()
         hadamard_imag = HadamardTest(operation, imaginary=True).get_circuit()
@@ -361,7 +366,7 @@ class VQLS:
         beta_norm = coeffs.dot(betas).dot(coeffs.conj().T).real[0, 0]
 
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
-        return np.sqrt(self.cost)
+        return self.cost
 
     def optimal_state(self, values_opt):
         backend = Aer.get_backend('statevector_simulator')
@@ -375,7 +380,7 @@ class VQLS:
     def print_cost(self, x):
         print("{:.5e}".format(self.cost))
 
-    def solve(self, optimizer=None, **kwargs):
+    def solve(self, optimizer=None):
     
         self.check_linear_system_exists()
         if not self._circuits_ready:
@@ -399,8 +404,7 @@ class VQLS:
             result = minimize(objective_func,
                               method=optimizer,
                               x0=parameters0,
-                              callback=self.print_cost,
-                              **kwargs)
+                              callback=self.print_cost)
         else:
             result = optimizer.minimize(objective_func,
                                         parameters0)
@@ -455,89 +459,97 @@ class VQLS:
         elif (self.Ub is None):
             raise ValueError("VQLS missing b vector of right-hand side")
         
-        
-    
-        
-
 
 class Experiment:
 
     def __init__(self,
                  matrices,
                  rhs,
-                 optimizer,
-                 solver=VQLS,
-                 backend=backend):
+                 optimizer=None,
+                 solver=VQLS(),
+                 backend=backend,
+                 output_path='./'):
 
         self.matrices = matrices
         self.target = rhs
         self.solver = solver
         self.optimizer = optimizer
-        self.backend = backend
         self.func_costs = None
         self.num_iterations = None
         self.num_func_evals = None
         self.solutions = None
         self.solution_times = None
         self.transpilation_times = None
+        self.output_path = output_path
 
     def run(self):
 
         b = self.target
-        backend = self.backend
-        optimizer = self.optimizer
-
-        num_iterations = []
-        num_func_evals = []
-        func_costs = []
-        solutions = []
-        transpilation_times = []
-        solution_times = []
+        solver = self.solver
+        solver.b = b
+        
+        self.num_iterations = []
+        self.num_func_evals = []
+        self.func_costs = []
+        self.solutions = []
+        self.transpilation_times = []
+        self.solution_times = []
         t0 = time()
         
-        for i, A in enumerate(self.matrices[:1]):
+        from datetime import datetime
+        suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
+        
+        for i, A in enumerate(self.matrices):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
             
-            solver = self.solver
+            
             solver.A = A
-            solver.construct_circuits()
-            solver.solve().get_solution(scaled=True)
+            solver.solve(optimizer=self.optimizer)
 
-            num_iterations.append(solver.result.nit)
-            func_costs.append(solver.result.fun)
-            num_func_evals.append(solver.result.nfev)
+            self.num_iterations.append(solver.result.nit)
+            self.func_costs.append(solver.result.fun)
+            self.num_func_evals.append(solver.result.nfev)
 
-            solutions.append(solver.get_solution(scaled=True))
-            transpilation_times.append(solver.transpilation_time)
-            solution_times.append(solver.solution_time)
+            self.solutions.append(solver.get_solution(scaled=True))
+            self.transpilation_times.append(solver.transpilation_time)
+            self.solution_times.append(solver.solution_time)
+
+            self.save(suffix=suffix)
+
 
             print(f"# Function Value: {solver.result.fun:1.5e}")
             print_time(time() - t0, msg="Total Simulation")
+            
+           
 
-        self.func_costs = np.array(func_costs)
-        self.num_iterations = np.array(num_iterations)
-        self.num_func_evals = np.array(num_func_evals)
-        self.solutions = np.array(solutions)
-        self.solution_times = np.array(solution_times)
-        self.transpilation_times = np.array(transpilation_times)
+        # self.func_costs = np.array(func_costs)
+        # self.num_iterations = np.array(num_iterations)
+        # self.num_func_evals = np.array(num_func_evals)
+        # self.solutions = np.array(solutions)
+        # self.solution_times = np.array(solution_times)
+        # self.transpilation_times = np.array(transpilation_times)
 
         return self
 
-    def save(self, results_path):
+    def save(self, suffix=''):
         """Save experiments as .npy binaries"""
-        from datetime import datetime
 
-        suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
-
-        names = {"Solutions": self.solutions,
-                 "SolutionTimes": self.solution_times,
-                 "MinFunctionValues": self.func_costs,
-                 "NumFunctionEvaluations": self.num_func_evals,
-                 "NumIterations": self.num_iterations}
+        names = {"Solutions": self.solutions[-1],
+                 "SolutionTimes": self.solution_times[-1],
+                 "MinFunctionValues": self.func_costs[-1],
+                 "NumFunctionEvaluations": self.num_func_evals[-1],
+                 "NumIterations": self.num_iterations[-1],
+                 "TranspilationTimes": self.transpilation_times[-1]}
 
         for name, array in names.items():
-            np.save(results_path + name + suffix, array)
+            filename = self.output_path + name + suffix + '.txt'
+            if array is not None:
+                with open(filename, 'a') as f:     
+                    np.savetxt(f, np.array([array]))
+            
+
+        
 
 
 if __name__ == '__main__':

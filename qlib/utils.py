@@ -9,7 +9,6 @@ Created on Fri Jul 15 15:17:41 2022
 
 import numpy as np
 from scipy.linalg import sqrtm, qr, norm
-import matplotlib.pyplot as plt
 from qiskit.extensions import UnitaryGate
 from qiskit.quantum_info import Operator
 

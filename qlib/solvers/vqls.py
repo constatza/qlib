@@ -216,18 +216,18 @@ class VQLS:
                  optimization_level=3,
                  num_shots=1):
 
-        self.matrix = A
-        self.target = b
-        self.lcu = LinearDecompositionOfUnitaries(A)
-        self.Ub = unitary_from_column_vector(b)
+        
+        self.b = b
+        self.A = A
+
         if ansatz is None:
             self.ansatz = FixedAnsatz(states2qubits(A.shape[0]),
                                       backend=backend)
         else:
             self.ansatz = ansatz
-
-        self.projector = projector(self.lcu, self.ansatz, self.Ub)
-        self.num_working_qubits = self.projector.num_working_qubits
+        
+        self.projector = projector
+        self.num_working_qubits = self.ansatz.num_qubits
         self.backend = backend
         self.optimization_level = optimization_level
         self.num_shots = num_shots
@@ -235,12 +235,14 @@ class VQLS:
         self.initial_parameters = initial_parameters
         self.delete_results()
         self.delete_matrix_attrs()
-        # self.construct_circuits()
+        self._circuits_ready = False
+
     
     def delete_matrix_attrs(self):
         self.num_unitaries = None
         self.num_jobs = None
         self.circuits = None
+        self._circuits_ready = False
         
     def delete_results(self):
         self.result = None
@@ -249,7 +251,8 @@ class VQLS:
         self.transpilation_time = None
 
     def construct_circuits(self):
-        assert (self.A is not None) and (self.b is not None)
+        self.check_linear_system_exists()
+        self.projector = self.projector(self.lcu, self.ansatz, self.Ub)
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
         circuits = []
@@ -270,6 +273,8 @@ class VQLS:
         print_time(transpilation_time)
         self.transpilation_time = transpilation_time
         self.num_jobs = len(self.circuits)
+        self._circuits_ready = False
+
 
     def construct_term(self, mu, nu, j):
 
@@ -295,6 +300,7 @@ class VQLS:
         return self
 
     def get_results(self, between):
+        
         irange = range(between[0], between[1])
 
         results = np.zeros(len(irange), dtype=float)
@@ -370,6 +376,11 @@ class VQLS:
         print("{:.5e}".format(self.cost))
 
     def solve(self, optimizer=None, **kwargs):
+    
+        self.check_linear_system_exists()
+        if not self._circuits_ready:
+            self.construct_circuits()
+        
         if optimizer is None:
             try:
                 optimizer = self.optimizer
@@ -420,7 +431,10 @@ class VQLS:
         self.delete_matrix_attrs()
         self.delete_results()
         self.matrix = matrix
-        self.lcu = LinearDecompositionOfUnitaries(matrix)
+        if (matrix is not None):
+            self.lcu = LinearDecompositionOfUnitaries(matrix)
+        else:
+            self.lcu = None
         
     @property
     def b(self):
@@ -430,7 +444,16 @@ class VQLS:
     def b(self, target):
         self.delete_results()
         self.target = target
-        self.Ub = unitary_from_column_vector(target)
+        if target is not None:
+            self.Ub = unitary_from_column_vector(target)
+        else:
+            self.Ub = None
+        
+    def check_linear_system_exists(self):
+        if (self.lcu is None):
+            raise ValueError("VQLS missing A matrix")
+        elif (self.Ub is None):
+            raise ValueError("VQLS missing b vector of right-hand side")
         
         
     
@@ -471,12 +494,14 @@ class Experiment:
         transpilation_times = []
         solution_times = []
         t0 = time()
+        
         for i, A in enumerate(self.matrices[:1]):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
             
             solver = self.solver
             solver.A = A
+            solver.construct_circuits()
             solver.solve().get_solution(scaled=True)
 
             num_iterations.append(solver.result.nit)

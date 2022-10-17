@@ -35,40 +35,30 @@ tol = 1e-6
 options = {'maxiter': 10000,
            'tol': tol}
 
-b = np.ones(size)
-np.random.seed(1)
-A = np.random.rand(size, size)
-
-
-A = 0.5*(A + A.conj().T) 
-
-# filepath = "/home/archer/code/quantum/data/"
-# matrices = loadmat(filepath + "stiffnessMatricesDataTraining.mat")\
-#     ['stiffnessMatricesData'].transpose(2, 0, 1)
+for _ in range(2):
+    b = np.ones(size)
+    np.random.seed(1)
+    A = np.random.rand(size, size)
     
-
     
-# A = matrices[np.random.randint(0, 999)]
-# num_qubits = states2qubits(A.shape[0])
-# b = np.zeros((16,))
-# b[7] = -100
-# b[14] = 100 
-
-
-x = np.linalg.solve(A, b)
-
-
-ansatz = FixedAnsatz(states2qubits(A.shape[0]),
-                   num_layers=num_layers)
-
-# ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
-vqls = VQLS(backend=backend, 
-            ansatz=ansatz)
-
-opt = COBYLA(tol=1e-4)
-
-# opt = SPSA()
-# opt = CG()
-
-xa = vqls.solve(optimizer=opt, options=options).get_solution(scaled=True)
-ba = xa.dot(A)
+    A = 0.5*(A + A.conj().T) 
+    
+    x = np.linalg.solve(A, b)
+    
+    
+    ansatz = FixedAnsatz(states2qubits(A.shape[0]),
+                       num_layers=num_layers)
+    
+    # ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
+    vqls = VQLS(backend=backend, 
+                ansatz=ansatz)
+    vqls.A = A
+    vqls.b = b
+    opt = COBYLA(tol=1e-4)
+    
+    # opt = SPSA()
+    # opt = CG()
+    
+    xa = vqls.solve(optimizer=opt).get_solution(scaled=True)
+    ba = xa.dot(A)
+    print(xa)

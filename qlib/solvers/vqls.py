@@ -206,8 +206,8 @@ class HadamardTest:
 class VQLS:
 
     def __init__(self,
-                 A,
-                 b,
+                 A=None,
+                 b=None,
                  initial_parameters=None,
                  projector=LocalProjector,
                  ansatz=None,
@@ -245,6 +245,7 @@ class VQLS:
         self.construct_circuits()
 
     def construct_circuits(self):
+        assert (self.A is not None) and (self.b is not None)
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
         circuits = []
@@ -447,7 +448,8 @@ class Experiment:
             print("# --------------------")
             print(f'# Experiment: {i:d}')
             
-            solver = self.solver(A, b, backend=backend, optimizer=optimizer)
+            solver = self.solver
+            solver.A = A
 
             solver.solve().get_solution(scaled=True)
 

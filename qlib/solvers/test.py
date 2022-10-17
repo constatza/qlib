@@ -11,7 +11,7 @@ from scipy.io import loadmat
 from qiskit import Aer
 from qlib.utils import states2qubits
 from qlib.solvers.vqls import VQLS, FixedAnsatz
-from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG
+from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 
 backend = Aer.get_backend('statevector_simulator',
@@ -62,11 +62,10 @@ ansatz = FixedAnsatz(states2qubits(A.shape[0]),
                    num_layers=num_layers)
 
 # ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
-vqls = VQLS(A, b, 
-            backend=backend, 
+vqls = VQLS(backend=backend, 
             ansatz=ansatz)
 
-opt = SciPyOptimizer(method='cobyla', options=options, callback=vqls.print_cost)
+opt = COBYLA(tol=1e-4)
 
 # opt = SPSA()
 # opt = CG()

@@ -39,8 +39,8 @@ b[3] = -100
 b[6] = 100
 
 
-# matrices = np.array(matrices[0:2, :4, :4])
-# b = np.array([1] + [0]*3)
+matrices = np.array(matrices[0:2, :4, :4])
+b = np.array([1] + [0]*3)
 
 ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
 

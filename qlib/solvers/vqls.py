@@ -415,12 +415,17 @@ class VQLS:
         self.result = result
         self.solution = self.optimal_state(result.x)
         return self
+    
+    @property
+    def optimal_parameters(self):
+        return self.result.x
 
     def get_solution(self, scaled=False):
         x = self.solution
         if scaled:
             b_up_to_constant = x.dot(self.matrix)
-            constant = np.mean(self.target/b_up_to_constant)
+            constants = self.target/b_up_to_constant
+            constant = np.mean(constants[constants!=0])
             xopt = constant*x
         else:
             xopt = x
@@ -478,12 +483,12 @@ class Experiment:
         self.num_iterations = None
         self.num_func_evals = None
         self.solutions = None
+        self.optimal_parameters = None
         self.solution_times = None
         self.transpilation_times = None
         self.output_path = output_path
 
     def run(self):
-
         b = self.target
         solver = self.solver
         solver.b = b
@@ -492,6 +497,7 @@ class Experiment:
         self.num_func_evals = []
         self.func_costs = []
         self.solutions = []
+        self.optimal_parameters = []
         self.transpilation_times = []
         self.solution_times = []
         t0 = time()
@@ -503,13 +509,13 @@ class Experiment:
             print("# --------------------")
             print(f'# Experiment: {i:d}')
             
-            
             solver.A = A
             solver.solve(optimizer=self.optimizer)
 
             self.num_iterations.append(solver.result.nit)
             self.func_costs.append(solver.result.fun)
             self.num_func_evals.append(solver.result.nfev)
+            self.optimal_parameters.append(solver.result.x)
 
             self.solutions.append(solver.get_solution(scaled=True))
             self.transpilation_times.append(solver.transpilation_time)
@@ -536,6 +542,7 @@ class Experiment:
         """Save experiments as .npy binaries"""
 
         names = {"Solutions": self.solutions[-1],
+                 "OptimalParameters":self.optimal_parameters[-1],
                  "SolutionTimes": self.solution_times[-1],
                  "MinFunctionValues": self.func_costs[-1],
                  "NumFunctionEvaluations": self.num_func_evals[-1],

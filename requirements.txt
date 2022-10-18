@@ -145,7 +145,6 @@ qiskit-aer==0.11.0
 qiskit-ibmq-provider==0.19.2
 qiskit-ignis==0.7.0
 qiskit-terra==0.21.2
--e git+ssh://git@gitlab/night-archer/quantum.git@b10cb8362d7de4e25ec7d55ed106aad78cb97a59#egg=qlib
 qstylizer==0.2.1
 QtAwesome==1.1.1
 qtconsole==5.3.2

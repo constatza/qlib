@@ -25,7 +25,7 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     max_parallel_threads=8,
 #                                     max_parallel_experiments=16,
 #                                     precision="single")
-num_qubits = 1
+num_qubits = 2
 size = 2**num_qubits
 num_layers = 8
 num_shots = 2**11
@@ -46,7 +46,7 @@ options = {'maxiter': 8000,
 
 opt = COBYLA(**options)
 
-b = np.ones(size)
+b = np.array([1] + (size-1)*[0])
 vqls.b = b
 for i in range(2):
    

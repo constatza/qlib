@@ -53,8 +53,8 @@ powell_options = {'maxfev': 5e3,
                   'ftol': tol}
 
 cobyla_options = {'maxiter': 5e3,
-                  'rhobeg': 2,
-                  'callback': vqls.print_cost}
+                  'rhobeg': 2}
+
 
 optimizer = POWELL(**powell_options)
 optimizer = COBYLA(**cobyla_options, options={'tol':tol})

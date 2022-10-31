@@ -27,18 +27,17 @@ input_path_solutions = "/home/archer/code/quantum/experiments/vqls8x8/results/cr
 X_raw = np.loadtxt(input_path_solutions)
 y_raw = np.loadtxt(input_path_vqls_parameters)
 
-# X, y = make_regression(n_samples=1000, n_features=3, n_targets=19)
-# y = np.atleast_2d(y)
+X_raw, y_raw = make_regression(n_samples=1000, n_features=3, n_targets=19)
+y_raw = np.atleast_2d(y_raw)
 
 
 
 #######
 # DRAW 
 #######
-y = np.hstack([np.cos(y_raw), np.sin(y_raw)])
-# y = scaler().fit_transform(y_raw)
+# y = np.hstack([np.cos(y_raw), np.sin(y_raw)])
+y = scaler().fit_transform(y_raw)
 X = scaler().fit_transform(X_raw)
-# y = scaler().fit_transform(y)
 # pca = PCA(n_components=3).fit(y)
 # y = pca.transform(y)
 
@@ -81,15 +80,18 @@ original_dims = y.shape[1]
 latent_dims = X.shape[1]
 
 encoder = Sequential([
-    Dense(15, input_shape=(original_dims,), activation='relu'),
-    Dense(latent_dims, activation='relu'),
+    Dense(10, input_shape=(original_dims,), activation='leaky_relu'),
+    Dense(10, activation='leaky_relu'),
+    Dense(10, activation='leaky_relu'),
+    Dense(latent_dims, activation='linear'),
     ])  
 
 
 
 decoder = Sequential([
-    Dense(15, input_shape=(latent_dims, ), activation='relu'),
-    Dense(original_dims, activation='tanh')
+    Dense(10, input_shape=(latent_dims, ), activation='leaky_relu'),
+    Dense(10, activation='leaky_relu'),
+    Dense(original_dims, activation='linear')
     ])  
 
 
@@ -98,19 +100,35 @@ latent_vector = encoder(original_input)
 original_output = decoder(latent_vector)
 autoencoder = Model(inputs=original_input, outputs=original_output)
 
-autoencoder.compile(loss='mse', 
-              optimizer='nadam')
+autoencoder.compile(loss='huber', 
+              optimizer='rmsprop')
 
-history = autoencoder.fit(x=y_train, y=y_train,
-                    batch_size=30,
-                    epochs=200, 
-                    validation_split=0.3)
 
-y_predicted = encoder.predict(X_test)
+encoder.compile(loss='huber', 
+              optimizer='sgd')
+
+decoder.compile(loss='huber', 
+              optimizer='rmsprop')
+
+history = encoder.fit(x=y_train, y=X_train,
+                     batch_size=2**6,
+                     epochs=1000, 
+                     validation_split=0.2)
+
+X_predicted = encoder.predict(y_test)
+
+# history = decoder.fit(x=X_train, y=y_train,
+#                     batch_size=2**6,
+#                     epochs=1000, 
+#                     validation_split=0.2)
+#y_predicted = decoder.predict(X_train, y_train)
+
+
+y_predicted = autoencoder.predict(y_test)
 
 # pca = PCA(n_components=2).fit_transform(y)
 
-loss = encoder.evaluate(X_test, y_test)
+loss = autoencoder.evaluate(y_test, y_test)
 
 
 

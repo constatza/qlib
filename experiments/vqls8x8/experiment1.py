@@ -17,7 +17,7 @@ from qlib.utils import states2qubits
 from qiskit.algorithms.optimizers import SciPyOptimizer, POWELL, COBYLA
 
 
-num_layers = 4
+num_layers = 2
 num_shots = 2**11
 tol = 1e-8
 
@@ -31,8 +31,11 @@ matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
     .transpose(2, 0, 1).astype(np.float64)
 solutions = loadmat(filepath + "solutions.mat")['solutionData']
 
-for matrix in matrices:
-    matrix[matrix==2e4] = np.max(matrix)
+# for matrix in matrices:
+#     matrix[matrix==2e4] = np.max(matrix)
+
+matrices = matrices[0:1]
+
 
 b = np.zeros((8,))
 b[3] = -100

@@ -39,7 +39,7 @@ b[3] = -100
 b[6] = 100
 
 
-matrices = np.array(matrices[0:2, :4, :4])
+matrices = np.array(matrices[0:5, :4, :4])
 b = np.array([1] + [0]*3)
 
 ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
@@ -53,8 +53,9 @@ powell_options = {'maxfev': 5e3,
                   'ftol': tol}
 
 cobyla_options = {'maxiter': 5e3,
-                  'rhobeg': 2,
-                  'callback': vqls.print_cost}
+                  'rhobeg': 1,
+                  'callback': vqls.print_cost,
+                  }
 
 optimizer = POWELL(**powell_options)
 optimizer = COBYLA(**cobyla_options, options={'tol':tol})
@@ -63,8 +64,8 @@ exp = Experiment(matrices, b,
                  optimizer=optimizer, 
                  solver=vqls, 
                  backend=backend,
-                 output_path=r"./results/")
-exp.run()
+                 output_path=r"./results/",)
+exp.run(nearby=True, rhobeg=1e-4)
 
 
 

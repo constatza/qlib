@@ -208,7 +208,6 @@ class VQLS:
     def __init__(self,
                  A=None,
                  b=None,
-                 initial_parameters=None,
                  projector=LocalProjector,
                  ansatz=None,
                  backend=backend,
@@ -229,7 +228,6 @@ class VQLS:
         self.optimization_level = optimization_level
         self.num_shots = num_shots
         self.optimizer = optimizer
-        self.initial_parameters = initial_parameters
         self.delete_results()
         self.delete_matrix_attrs()
         self._circuits_ready = False
@@ -380,7 +378,7 @@ class VQLS:
     def print_cost(self, x):
         print("{:.5e}".format(self.cost))
 
-    def solve(self, optimizer=None):
+    def solve(self, optimizer=None, initial_parameters=None,**kwargs):
     
         self.check_linear_system_exists()
         if not self._circuits_ready:
@@ -392,11 +390,11 @@ class VQLS:
             except:
                 raise ValueError("No optimizer")
 
-        if self.initial_parameters is None:
+        if initial_parameters is None:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
         else:
-            parameters0 = self.initial_parameters
-
+            parameters0 = initial_parameters
+            
         print("# Optimizing")
         t0 = time()
         objective_func = self.local_cost
@@ -407,7 +405,7 @@ class VQLS:
                               callback=self.print_cost)
         else:
             result = optimizer.minimize(objective_func,
-                                        parameters0)
+                                        x0=parameters0)
 
         solution_time = time() - t0
         print_time(solution_time, msg="Solution")
@@ -488,9 +486,10 @@ class Experiment:
         self.transpilation_times = None
         self.output_path = output_path
 
-    def run(self):
+    def run(self, nearby=False, initial_parameters=None, **kwargs):
         b = self.target
         solver = self.solver
+        optimizer = self.optimizer
         solver.b = b
         
         self.num_iterations = []
@@ -510,7 +509,14 @@ class Experiment:
             print(f'# Experiment: {i:d}')
             
             solver.A = A
-            solver.solve(optimizer=self.optimizer)
+            
+            if nearby & i>0:
+                initial_parameters = self.optimal_parameters[-1]
+                optimizer.set_options(**kwargs)
+                
+            solver.solve(optimizer=optimizer,
+                         initial_parameters=initial_parameters)
+
 
             self.num_iterations.append(solver.result.nit)
             self.func_costs.append(solver.result.fun)

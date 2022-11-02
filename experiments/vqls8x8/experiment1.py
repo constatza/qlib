@@ -8,13 +8,12 @@ Created on Thu Sep 29 15:38:15 2022
 """
 
 import numpy as np
-from scipy.optimize import Bounds
+
 from qiskit import Aer
 from scipy.io import loadmat
-from numpy.linalg import det, cond
 from qlib.solvers.vqls import VQLS, FixedAnsatz, Experiment
 from qlib.utils import states2qubits
-from qiskit.algorithms.optimizers import SciPyOptimizer, POWELL, COBYLA
+from qiskit.algorithms.optimizers import POWELL, COBYLA
 
 
 num_layers = 2
@@ -62,7 +61,8 @@ exp = Experiment(matrices, b,
                  solver=vqls, 
                  backend=backend,
                  output_path=r"./results/")
-exp.run(nearby=True, rhobeg=1e-5)
+
+exp.run(nearby=True, rhobeg=1e-4)
 
 
 

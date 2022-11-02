@@ -17,7 +17,7 @@ from qlib.utils import states2qubits
 from qiskit.algorithms.optimizers import SciPyOptimizer, POWELL, COBYLA
 
 
-num_layers = 4
+num_layers = 2
 num_shots = 2**11
 tol = 1e-8
 
@@ -39,8 +39,8 @@ b[3] = -100
 b[6] = 100
 
 
-matrices = np.array(matrices[0:5, :4, :4])
-b = np.array([1] + [0]*3)
+matrices = np.array(matrices[0:2, :, :])
+#b = np.array([1] + [0]*3)
 
 ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
 

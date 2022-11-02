@@ -31,8 +31,8 @@ matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
     .transpose(2, 0, 1).astype(np.float64)
 solutions = loadmat(filepath + "solutions.mat")['solutionData']
 
-# for matrix in matrices:
-#     matrix[matrix==2e4] = np.max(matrix)
+for matrix in matrices:
+    matrix[matrix==2e4] = np.max(matrix)
 
 matrices = matrices[0:1]
 
@@ -41,12 +41,7 @@ b = np.zeros((8,))
 b[3] = -100
 b[6] = 100
 
-
-# matrices = np.array(matrices[0:2, :4, :4])
-# b = np.array([1] + [0]*3)
-
 ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
-
 
 vqls = VQLS(ansatz=ansatz, 
             backend=backend)
@@ -67,7 +62,7 @@ exp = Experiment(matrices, b,
                  solver=vqls, 
                  backend=backend,
                  output_path=r"./results/")
-exp.run()
+exp.run(nearby=True, rhobeg=1e-5)
 
 
 

@@ -36,7 +36,7 @@ filepath = "../../data/8x8/"
 matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
     .transpose(2, 0, 1).astype(np.float64)
 solutions = loadmat(filepath + "solutions.mat")['solutionData']
-optimals = np.loadtxt("../../experiments/vqls8x8/results/critical/OptimalParameters.txt" )
+optimals = np.loadtxt("../../experiments/vqls8x8/results/critical/OptimalParameters.out" )
 
 
 for matrix in matrices:
@@ -78,19 +78,12 @@ for A in matrices[0:1]:
    
     
     x = np.linalg.solve(A, b)
-    
-    
-    
-    
+
     # ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
     
     vqls.A = A
     vqls.b = b
 
-
-    
-    # opt = SPSA()
-    # opt = CG()
     
     xa = vqls.solve(optimizer=opt, initial_parameters=x0).get_solution(scaled=True)
     ba = xa.dot(A)

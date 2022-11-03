@@ -121,6 +121,15 @@ class FixedAnsatz(Ansatz):
 
     def get_circuit(self):
         return self.circuit
+    
+    def get_state(self, values_opt):
+        backend = Aer.get_backend('statevector_simulator')
+        qc = self.get_circuit().assign_parameters(values_opt)
+        job = execute(qc, backend=backend)
+
+        state = job.result().get_statevector()
+
+        return np.asarray(state).real
 
 
 class LocalProjector:
@@ -366,14 +375,7 @@ class VQLS:
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
 
-    def optimal_state(self, values_opt):
-        backend = Aer.get_backend('statevector_simulator')
-        qc = self.ansatz.get_circuit().assign_parameters(values_opt)
-        job = execute(qc, backend=backend)
-
-        state = job.result().get_statevector()
-
-        return np.asarray(state).real
+    
 
     def print_cost(self, x):
         print("{:.5e}".format(self.cost))
@@ -411,7 +413,7 @@ class VQLS:
         print_time(solution_time, msg="Solution")
         self.solution_time = solution_time
         self.result = result
-        self.solution = self.optimal_state(result.x)
+        self.solution = self.ansatz.get_state(result.x)
         return self
     
     @property

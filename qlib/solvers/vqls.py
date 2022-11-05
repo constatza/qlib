@@ -70,7 +70,7 @@ class RealAmplitudesAnsatz(Ansatz):
 
         self.construct_ansatz()
 
-    def contruct_circuit(self):
+    def construct_circuit(self):
         self.circuit = RealAmplitudes(num_qubits=self.num_qubits,
                                       reps=self.num_layers)
 
@@ -215,7 +215,7 @@ class VQLS:
                  optimization_level=3,
                  num_shots=1):
 
-        
+
         self.b = b
         self.A = A
         self.ansatz = ansatz
@@ -233,13 +233,13 @@ class VQLS:
         self._circuits_ready = False
         self._projector_instance = None
 
-    
+
     def delete_matrix_attrs(self):
         self.num_unitaries = None
         self.num_jobs = None
         self.circuits = None
         self._circuits_ready = False
-        
+
     def delete_results(self):
         self.result = None
         self.solution = None
@@ -249,14 +249,14 @@ class VQLS:
     def construct_circuits(self):
         self.check_linear_system_exists()
         self._projector_instance = self.projector(self.lcu, self.ansatz, self.Ub)
-        
+
         if self.ansatz is None:
             num_working_qubits = states2qubits(self.b.shape[0])
             self.num_working_qubits = num_working_qubits
             self.ansatz = FixedAnsatz(num_working_qubits,
                                       backend=backend)
-        
-        
+
+
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
         circuits = []
@@ -303,7 +303,7 @@ class VQLS:
         return self
 
     def get_results(self, between):
-        
+
         irange = range(between[0], between[1])
 
         results = np.zeros(len(irange), dtype=float)
@@ -379,11 +379,11 @@ class VQLS:
         print("{:.5e}".format(self.cost))
 
     def solve(self, optimizer=None, initial_parameters=None,**kwargs):
-    
+
         self.check_linear_system_exists()
         if not self._circuits_ready:
             self.construct_circuits()
-        
+
         if optimizer is None:
             try:
                 optimizer = self.optimizer
@@ -394,7 +394,7 @@ class VQLS:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
         else:
             parameters0 = initial_parameters
-            
+
         print("# Optimizing")
         t0 = time()
         objective_func = self.local_cost
@@ -413,7 +413,7 @@ class VQLS:
         self.result = result
         self.solution = self.optimal_state(result.x)
         return self
-    
+
     @property
     def optimal_parameters(self):
         return self.result.x
@@ -428,11 +428,11 @@ class VQLS:
         else:
             xopt = x
         return xopt
-    
+
     @property
     def A(self):
         return self.matrix
-    
+
     @A.setter
     def A(self, matrix):
         self.delete_matrix_attrs()
@@ -442,11 +442,11 @@ class VQLS:
             self.lcu = LinearDecompositionOfUnitaries(matrix)
         else:
             self.lcu = None
-        
+
     @property
     def b(self):
         return self.target
-    
+
     @b.setter
     def b(self, target):
         self.delete_results()
@@ -455,13 +455,13 @@ class VQLS:
             self.Ub = unitary_from_column_vector(target)
         else:
             self.Ub = None
-        
+
     def check_linear_system_exists(self):
         if (self.lcu is None):
             raise ValueError("VQLS missing A matrix")
         elif (self.Ub is None):
             raise ValueError("VQLS missing b vector of right-hand side")
-        
+
 
 class Experiment:
 
@@ -486,12 +486,13 @@ class Experiment:
         self.transpilation_times = None
         self.output_path = output_path
 
-    def run(self, nearby=False, initial_parameters=None, **kwargs):
+    def run(self, nearby=False, initial_parameters=None, save=True,
+            suffix=None, **kwargs):
         b = self.target
         solver = self.solver
         optimizer = self.optimizer
         solver.b = b
-        
+
         self.num_iterations = []
         self.num_func_evals = []
         self.func_costs = []
@@ -499,21 +500,22 @@ class Experiment:
         self.optimal_parameters = []
         self.transpilation_times = []
         self.solution_times = []
+
+        if suffix is None:
+            from datetime import datetime
+            suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
+
         t0 = time()
-        
-        from datetime import datetime
-        suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
-        
         for i, A in enumerate(self.matrices):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
-            
+
             solver.A = A
-            
+
             if nearby & i>0:
                 initial_parameters = self.optimal_parameters[-1]
                 optimizer.set_options(**kwargs)
-                
+
             solver.solve(optimizer=optimizer,
                          initial_parameters=initial_parameters)
 
@@ -522,25 +524,25 @@ class Experiment:
             self.func_costs.append(solver.result.fun)
             self.num_func_evals.append(solver.result.nfev)
             self.optimal_parameters.append(solver.result.x)
-
             self.solutions.append(solver.get_solution(scaled=True))
             self.transpilation_times.append(solver.transpilation_time)
             self.solution_times.append(solver.solution_time)
 
-            self.save(suffix=suffix)
+            if save:
+                self.save(suffix=suffix)
 
 
             print(f"# Function Value: {solver.result.fun:1.5e}")
             print_time(time() - t0, msg="Total Simulation")
-            
-           
 
-        # self.func_costs = np.array(func_costs)
-        # self.num_iterations = np.array(num_iterations)
-        # self.num_func_evals = np.array(num_func_evals)
-        # self.solutions = np.array(solutions)
-        # self.solution_times = np.array(solution_times)
-        # self.transpilation_times = np.array(transpilation_times)
+
+        self.num_iterations = np.array(self.num_iterations)
+        self.func_costs = np.array(self.func_costs)
+        self.num_func_evals = np.array(self.num_func_evals)
+        self.optimal_parameters = np.array(self.optimal_parameters)
+        self.solutions = np.array(self.solutions)
+        self.transpilation_times = np.array(self.transpilation_times)
+        self.solution_times = np.array(self.solution_times)
 
         return self
 
@@ -558,11 +560,11 @@ class Experiment:
         for name, array in names.items():
             filename = self.output_path + name + suffix + '.txt'
             if array is not None:
-                with open(filename, 'a') as f:     
+                with open(filename, 'a') as f:
                     np.savetxt(f, np.array([array]))
-            
 
-        
+
+
 
 
 if __name__ == '__main__':

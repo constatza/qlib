@@ -8,16 +8,14 @@ Created on Thu Sep 29 15:38:15 2022
 """
 
 import numpy as np
-from scipy.optimize import Bounds
 from qiskit import Aer
 from scipy.io import loadmat
-from numpy.linalg import det, cond
 from qlib.solvers.vqls import VQLS, FixedAnsatz, Experiment
 from qlib.utils import states2qubits
-from qiskit.algorithms.optimizers import SciPyOptimizer, POWELL, COBYLA
+from qiskit.algorithms.optimizers import POWELL, COBYLA
 
 
-num_layers = 4
+num_layers = 2
 num_shots = 2**11
 tol = 1e-8
 
@@ -39,8 +37,9 @@ b[3] = -100
 b[6] = 100
 
 
-matrices = np.array(matrices[0:5, :4, :4])
-b = np.array([1] + [0]*3)
+size = 8
+matrices = np.array(matrices[0:2, :size, :size])
+# b = np.array([1] + [0]*(size-1))
 
 ansatz = FixedAnsatz(states2qubits(b.shape[0]), num_layers=num_layers)
 
@@ -53,7 +52,7 @@ powell_options = {'maxfev': 5e3,
                   'ftol': tol}
 
 cobyla_options = {'maxiter': 5e3,
-                  'rhobeg': 1,
+                  'rhobeg': 2,
                   'callback': vqls.print_cost,
                   }
 

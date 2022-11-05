@@ -76,20 +76,10 @@ x0 = optimals[0, :]
 
 for A in matrices[0:1]:
 
-
     x = np.linalg.solve(A, b)
-
-
-
-    # ansatz = RealAmplitudes(num_qubits=num_qubits, reps=20)
 
     vqls.A = A
     vqls.b = b
-
-
-
-    # opt = SPSA()
-    # opt = CG()
 
     xa = vqls.solve(optimizer=opt, initial_parameters=x0).get_solution(scaled=True)
     ba = xa.dot(A)

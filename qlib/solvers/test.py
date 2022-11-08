@@ -10,14 +10,13 @@ import numpy as np
 from scipy.io import loadmat
 from qiskit import Aer
 from qlib.utils import states2qubits
-from qlib.solvers.vqls import VQLS, FixedAnsatz
+from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 
 backend = Aer.get_backend('statevector_simulator',
                           max_parallel_threads=4,
                           max_parallel_experiments=20,
-                          max_job_size=4,
                           num_shots=1,
                          precision="single")
 
@@ -27,7 +26,7 @@ backend = Aer.get_backend('statevector_simulator',
 #                                     precision="single")
 num_qubits = 3
 size = 2**num_qubits
-num_layers = 4
+num_layers = 2
 num_shots = 2**11
 tol = 1e-3
 # np.random.seed(1)
@@ -51,20 +50,29 @@ b[6] = 100
 # b = np.array([1] + [0]*3)
 
 ansatz = FixedAnsatz(num_qubits,
-                   num_layers=num_layers)
+                   num_layers=num_layers,
+                   max_parameters=7)
+qc = ansatz.get_circuit()
+print(qc)
+
+# ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits,
+#                              num_layers=num_layers
+#                              )
+
+
 
 vqls = VQLS(backend=backend,
             ansatz=ansatz)
 
-options = {'maxiter': 8000,
+options = {'maxiter': 5000,
            'tol': tol,
            'callback':vqls.print_cost,
-           'rhobeg':1e-3}
+           'rhobeg':2}
 
 opt = COBYLA(**options)
 
 
-x0 = optimals[0, :]
+# x0 = optimals[0, :]
 
 
 # x0 = np.array([ 1.12883635,  1.79521215,  2.33015176,  2.3826475 , -0.87673251,
@@ -81,6 +89,6 @@ for A in matrices[0:1]:
     vqls.A = A
     vqls.b = b
 
-    xa = vqls.solve(optimizer=opt, initial_parameters=x0).get_solution(scaled=True)
+    xa = vqls.solve(optimizer=opt).get_solution(scaled=True)
     ba = xa.dot(A)
     print(xa)

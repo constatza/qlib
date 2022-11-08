@@ -26,6 +26,9 @@ xx, yy = np.meshgrid(parameter0, parameter1)
 x = xx.ravel()
 y = yy.ravel()
 
+x = np.linspace(1, 3, 100)
+y = np.linspace(2, 4, 100)
+
 matrices = np.array([[-0.5*x**2, x*y],
                      [x*y, 2*y**2 + 1]])
 
@@ -37,8 +40,8 @@ backend = Aer.get_backend('statevector_simulator',
                           precision="single")
 
 matrices = matrices.transpose(2, 0, 1)
-# matrices = np.block([[3*matrices, 2*matrices],
-#                      [2*matrices, 4*matrices]])
+matrices = np.block([[3*matrices, 2*matrices],
+                      [2*matrices, 4*matrices]])
 
 N = matrices.shape[2]
 num_qubits = states2qubits(N)
@@ -47,11 +50,12 @@ num_qubits = states2qubits(N)
 rhs = np.zeros((N,))
 rhs[0] = 1
 
-ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1)
-ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=1)
+ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=3, max_parameters=19)
+# ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=1)
 num_parameters = ansatz.num_parameters
-qc = ansatz.get_circuit().decompose()
-print(qc)
+qc = ansatz.get_circuit()
+
+
 vqls = VQLS(ansatz=ansatz,
             backend=backend
             )
@@ -66,8 +70,7 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-experiment.run(save=True,
-                initial_parameters=np.array([1, 1]))
+experiment.run(save=False)
 
 
 optimals = experiment.optimal_parameters
@@ -78,13 +81,15 @@ solutions = experiment.solutions
 plt.plot(parameter0, np.sin(optimals[:, 0] + optimals[:,1]))
 
 fig, ax = plt.subplots()
-# ax.plot(parameter0, np.sin(optimals))
-# ax.plot(parameter1, np.sin(optimals[:, 0] + optimals[:, 1]))
-ax.set_xlabel('a1')
-ax.set_ylabel('a2')
-zz = optimals.reshape((size, size, -1))
-ax.contourf(xx, yy, np.sin(zz[:, :, 0]))
-ax.contourf(xx, yy, np.sin(np.sum(zz, axis=-1)))
+ax.plot(x, np.sin(optimals))
+ax.plot(x, np.sin(optimals[:, 0] + optimals[:, 1]))
+ax.set_xlabel('x1')
+
+# 2D
+# ax.set_ylabel('x2')
+# zz = optimals.reshape((size, size, -1))
+# ax.contourf(xx, yy, np.sin(zz[:, :, 0]))
+# ax.contourf(xx, yy, np.sin(np.sum(zz, axis=-1)))
 
 fig, ax = plt.subplots()
 theta =np.linspace(0, 4*np.pi)

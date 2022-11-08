@@ -25,10 +25,12 @@ class Ansatz:
                  num_qubits,
                  num_layers=1,
                  optimization_level=3,
+                 max_parameters=None,
                  backend=None):
 
         self.num_qubits = num_qubits
         self.num_layers = num_layers
+        self.max_parameters = max_parameters
         self.num_parameters = None
         self.parameters = None
         self.circuit = None
@@ -54,6 +56,15 @@ class Ansatz:
     def get_circuit(self):
         return self.circuit
 
+    def get_state(self, values_opt):
+        backend = Aer.get_backend('statevector_simulator')
+        qc = self.get_circuit().assign_parameters(values_opt)
+        job = execute(qc, backend=backend)
+
+        state = job.result().get_statevector()
+
+        return np.asarray(state).real
+
 
 class RealAmplitudesAnsatz(Ansatz):
 
@@ -75,17 +86,20 @@ class RealAmplitudesAnsatz(Ansatz):
                                       reps=self.num_layers)
 
 
+
 class FixedAnsatz(Ansatz):
 
     def __init__(self, num_qubits,
                  num_layers=1,
                  optimization_level=3,
+                 max_parameters=None,
                  backend=None):
 
         super().__init__(num_qubits,
-                         num_layers,
-                         optimization_level,
-                         backend)
+                         num_layers=num_layers,
+                         optimization_level=optimization_level,
+                         max_parameters=max_parameters,
+                         backend=backend)
 
         self.construct_ansatz()
 
@@ -93,43 +107,64 @@ class FixedAnsatz(Ansatz):
         num_qubits = self.num_qubits
         num_layers = self.num_layers
 
+
         circuit = QuantumCircuit(num_qubits, name='V')
         num_parameters = 2*num_layers * \
             (num_qubits//2 + (num_qubits-1)//2) + num_qubits
-        qubits = circuit.qubits
-        parameters = ParameterVector('a', num_parameters)
 
-        ia = 0
+
+        if self.max_parameters is not None:
+             max_parameters = self.max_parameters
+        else:
+             max_parameters = num_parameters
+
+        parameters = ParameterVector('a', max_parameters)
+
+        num_parameters_current = 0
         for iz in range(num_qubits):
-            circuit.ry(parameters[ia], iz)
-            ia += 1
+            circuit.ry(parameters[num_parameters_current], iz)
+            num_parameters_current += 1
 
-        for _ in range(num_layers):
-            for iz in range(0, num_qubits-1, 2):
-                circuit.cz(iz, iz+1)
-                circuit.ry(parameters[ia], qubits[iz])
-                circuit.ry(parameters[ia+1], qubits[iz+1])
-                ia += 2
+        iters = 0
+        while num_parameters_current < max_parameters and iters < num_layers:
+            iters += 1
+            circuit, num_parameters_current = self._apply_layer(circuit,
+                                                                parameters,
+                                        0, num_qubits-1,
+                                        num_parameters_current,
+                                        max_parameters)
 
-            for iz in range(1, num_qubits-1, 2):
-                circuit.cz(iz, iz+1)
-                circuit.ry(parameters[ia], qubits[iz])
-                circuit.ry(parameters[ia+1], qubits[iz+1])
-                ia += 2
+            print(circuit)
+            circuit, num_parameters_current = self._apply_layer(circuit,
+                                                                parameters,
+                                        1, num_qubits-1,
+                                        num_parameters_current,
+                                        max_parameters)
 
         self.circuit = circuit
+        return self
 
     def get_circuit(self):
         return self.circuit
-    
-    def get_state(self, values_opt):
-        backend = Aer.get_backend('statevector_simulator')
-        qc = self.get_circuit().assign_parameters(values_opt)
-        job = execute(qc, backend=backend)
 
-        state = job.result().get_statevector()
+    @staticmethod
+    def _apply_layer(circuit, parameters,
+                     start, end,
+                     num_parameters_current,
+                     max_parameters):
 
-        return np.asarray(state).real
+        qubits = circuit.qubits
+        if num_parameters_current < max_parameters:
+            for iz in range(start, end, 2):
+                circuit.cz(iz, iz+1)
+                for j in range(2):
+                    circuit.ry(parameters[num_parameters_current], qubits[iz+j])
+                    num_parameters_current += 1
+
+                    if num_parameters_current >= max_parameters:
+                        return circuit, num_parameters_current
+
+        return circuit, num_parameters_current
 
 
 class LocalProjector:
@@ -375,7 +410,7 @@ class VQLS:
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
 
-    
+
 
     def print_cost(self, x):
         print("{:.5e}".format(self.cost))

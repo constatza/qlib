@@ -10,26 +10,23 @@ import numpy as np
 from scipy.io import loadmat
 from qiskit import Aer
 from qlib.utils import states2qubits
-from qlib.solvers.vqls import VQLS, FixedAnsatz
+from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
+from qiskit_aer.backends.aer_simulator import AerSimulator
 
 backend = Aer.get_backend('statevector_simulator',
-                          max_parallel_threads=4,
-                          max_parallel_experiments=20,
-                          max_job_size=4,
+                          max_parallel_experiments=4,
+
                           num_shots=1,
                          precision="single")
 
-# backend = qiskit.Aer.get_backend('qasm_simulator',
-#                                     max_parallel_threads=8,
-#                                     max_parallel_experiments=16,
-#                                     precision="single")
 num_qubits = 3
+num_layers = 2
+
 size = 2**num_qubits
-num_layers = 4
 num_shots = 2**11
-tol = 1e-3
+tol = 1e-8
 # np.random.seed(1)
 
 filepath = "../../data/8x8/"
@@ -42,6 +39,7 @@ optimals = np.loadtxt("../../experiments/vqls8x8/results/critical/OptimalParamet
 for matrix in matrices:
     matrix[matrix==2e4] = np.max(matrix)
 
+
 b = np.zeros((8,))
 b[3] = -100
 b[6] = 100
@@ -49,9 +47,20 @@ b[6] = 100
 
 # matrices = np.array(matrices[0:2, :4, :4])
 # b = np.array([1] + [0]*3)
+# N = 2**num_qubits
+# matrices = np.random.rand(2, N, N)
+# matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
+# b = np.random.rand(N,1)
+
 
 ansatz = FixedAnsatz(num_qubits,
                    num_layers=num_layers)
+
+ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits,
+                   num_layers=num_layers)
+
+qc = ansatz.get_circuit()
+print(qc)
 
 vqls = VQLS(backend=backend,
             ansatz=ansatz)
@@ -59,12 +68,12 @@ vqls = VQLS(backend=backend,
 options = {'maxiter': 8000,
            'tol': tol,
            'callback':vqls.print_cost,
-           'rhobeg':1e-3}
+           'rhobeg':2}
 
 opt = COBYLA(**options)
 
 
-x0 = optimals[0, :]
+# x0 = optimals[0, :]
 
 
 # x0 = np.array([ 1.12883635,  1.79521215,  2.33015176,  2.3826475 , -0.87673251,
@@ -81,6 +90,6 @@ for A in matrices[0:1]:
     vqls.A = A
     vqls.b = b
 
-    xa = vqls.solve(optimizer=opt, initial_parameters=x0).get_solution(scaled=True)
+    xa = vqls.solve(optimizer=opt).get_solution(scaled=True)
     ba = xa.dot(A)
     print(xa)

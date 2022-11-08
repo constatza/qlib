@@ -37,8 +37,8 @@ class Ansatz:
         self.construct_circuit()
         self.transpile_circuit()
 
-    def construct_ansatz(self):
-        self.construct_circuit()
+    def construct_ansatz(self, *args, **kwargs):
+        self.construct_circuit(*args, **kwargs)
         self.num_parameters = self.circuit.num_parameters
         self.parameters = self.circuit.parameters
         self.transpile_circuit()
@@ -53,7 +53,15 @@ class Ansatz:
 
     def get_circuit(self):
         return self.circuit
+    
+    def get_state(self, values_opt):
+        backend = Aer.get_backend('statevector_simulator')
+        qc = self.get_circuit().assign_parameters(values_opt)
+        job = execute(qc, backend=backend)
 
+        state = job.result().get_statevector()
+
+        return np.asarray(state).real
 
 class RealAmplitudesAnsatz(Ansatz):
 
@@ -61,14 +69,15 @@ class RealAmplitudesAnsatz(Ansatz):
                  num_qubits,
                  num_layers=1,
                  optimization_level=3,
-                 backend=None):
+                 backend=None, 
+                 *args, **kwargs):
 
         super().__init__(num_qubits,
                          num_layers,
                          optimization_level,
                          backend)
 
-        self.construct_ansatz()
+        self.construct_ansatz(*args, **kwargs)
 
     def construct_circuit(self):
         self.circuit = RealAmplitudes(num_qubits=self.num_qubits,
@@ -122,14 +131,6 @@ class FixedAnsatz(Ansatz):
     def get_circuit(self):
         return self.circuit
     
-    def get_state(self, values_opt):
-        backend = Aer.get_backend('statevector_simulator')
-        qc = self.get_circuit().assign_parameters(values_opt)
-        job = execute(qc, backend=backend)
-
-        state = job.result().get_statevector()
-
-        return np.asarray(state).real
 
 
 class LocalProjector:
@@ -205,7 +206,7 @@ class HadamardTest:
         qc.h(control_reg)
         if measure:
             qc.measure(control_reg, classical_reg)
-        # draw(qc.decompose())
+        # qc.save_statevector()
         self.qc = qc
 
     def get_circuit(self):
@@ -305,10 +306,11 @@ class VQLS:
 
         for i in range(self.num_jobs):
             experiment = self.circuits[i].bind_parameters(values)
-            experiments.append(experiment)
+            job = self.backend.run(experiment)
+            experiments.append(job)
 
-        self.job = self.backend.run(experiments)
-
+        # self.job = self.backend.run(experiments)
+        self.job = experiments
         return self
 
     def get_results(self, between):
@@ -316,16 +318,16 @@ class VQLS:
         irange = range(between[0], between[1])
 
         results = np.zeros(len(irange), dtype=float)
-        result = self.job.result()
+        # result = self.job.result()
+        job = self.job
 
-        if self.backend.name() == 'statevector_simulator':
-            for i in irange:  # 2 parts: real, imag per term
-                state = result.get_statevector(i)
-                results[i-between[0]] = state.probabilities([0])[0]
-        else:
-            for i in irange:  # 2 parts: real, imag per term
-                counts = result.get_counts(i)
-                results[i-between[0]] = counts['0']/self.num_shots
+        for i in irange:  # 2 parts: real, imag per term
+            state = job[i].result().get_statevector()
+            results[i-between[0]] = state.probabilities([0])[0]
+        # else:
+        #     for i in irange:  # 2 parts: real, imag per term
+        #         counts = job[i].result().get_counts(i)
+        #         results[i-between[0]] = counts['0']/self.num_shots
 
         return results
 
@@ -346,8 +348,10 @@ class VQLS:
         betas_unique = beta_p0[:-1:2] + 1j*beta_p0[1::2]
         betas = np.zeros((L, L), dtype=np.complex128)
         for m in range(L):
-            for l in range(m+1):
+            betas[m, m] = np.complex(1, 0)
+            for l in range(m):
                 betas[m, l] = betas_unique[m + l]
+               
                 if l < m:
                     betas[l, m] = betas_unique[m + l].conj()
 

@@ -38,8 +38,13 @@ backend = Aer.get_backend('statevector_simulator',
                           precision="single")
 
 matrices = matrices.transpose(2, 0, 1)
-# matrices = np.block([[3*matrices, 2*matrices],
-#                      [2*matrices, 4*matrices]])
+
+matrices = np.block([[3*matrices, 2*matrices],
+                      [2*matrices, 4*matrices]])
+
+matrices = np.block([[3*matrices, 2*matrices],
+                      [2*matrices, 4*matrices]])
+
 
 N = matrices.shape[2]
 num_qubits = states2qubits(N)
@@ -48,8 +53,8 @@ num_qubits = states2qubits(N)
 rhs = np.zeros((N,))
 rhs[0] = 1
 
-ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1)
-ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=1)
+# ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1)
+ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=2)
 num_parameters = ansatz.num_parameters
 qc = ansatz.get_circuit().decompose()
 print(qc)
@@ -68,8 +73,7 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-experiment.run(save=False,
-                initial_parameters=np.array([1, 1]))
+experiment.run(save=False,)
 
 
 optimals = experiment.optimal_parameters
@@ -87,5 +91,3 @@ ax.set_xlabel('x1')
 # zz = optimals.reshape((size, size, -1))
 # ax.contourf(xx, yy, np.sin(zz[:, :, 0]))
 # ax.contourf(xx, yy, np.sin(np.sum(zz, axis=-1)))
-
-

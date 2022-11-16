@@ -20,12 +20,12 @@ plt.close('all')
 scaler = MinMaxScaler
 
 
-input_path_vqls_parameters = "/home/archer/code/quantum/experiments/vqls8x8/results/layers-2/OptimalParameters_2022-11-02_17-19.txt"
+input_path_vqls_parameters = "/home/archer/code/quantum/experiments/vqls8x8/results/continuous/OptimalParameters_2022-11-02_17-19.txt"
 input_path_physical_parameters = "/home/archer/code/quantum/data/8x8/parameters.mat"
 input_path_solutions = "/home/archer/code/quantum/experiments/vqls8x8/results/layers-2/Solutions_2022-11-02_17-19.txt"
 
 y_raw = np.loadtxt(input_path_vqls_parameters)
-X_raw = loadmat(input_path_physical_parameters)['parameterData'].T[:836]
+X_raw = loadmat(input_path_physical_parameters)['parameterData'].T[:-2]
 
 # X_raw = np.loadtxt(input_path_solutions)
 # y_raw = np.loadtxt(input_path_vqls_parameters)
@@ -74,46 +74,3 @@ plt.show()
 fig, ax = plt.subplots()
 ax.scatter(y[:, 0], y[:, 1], c = X[:, 1])
 plt.show()
-
-
-######
-# TRAIN
-######
-
-X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                    test_size=0.2,
-                                                    shuffle=True
-                                                    )
-
-
-
-original_dims = X.shape[1] # 1000x3
-output_dims = y.shape[1] # 1000x19
-
-
-model = Sequential([
-    Dense(5, input_shape=(original_dims,), activation='tanh'),
-    Dense(5, activation='tanh'),
-    Dense(5, activation='tanh'),
-    Dense(10, activation='tanh'),
-    Dense(10, activation='tanh'),
-    Dense(output_dims, activation='linear'),
-    ])
-
-
-optimizer = Adam(learning_rate=1e-2,)
-
-
-
-
-
-model.compile(loss='huber',
-              optimizer=optimizer)
-
-history = model.fit(x=X_train, y=y_train,
-                    batch_size=20,
-                    epochs=20,
-                    validation_split=0.2)
-
-y_predicted = model.predict(X_test)
-loss = model.evaluate(X_test, y_test)

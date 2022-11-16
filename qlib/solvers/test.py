@@ -13,33 +13,32 @@ from qlib.utils import states2qubits
 from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
+from qiskit_aer.backends.aer_simulator import AerSimulator
+from keras.models import load_model
 
 backend = Aer.get_backend('statevector_simulator',
-                          max_parallel_threads=4,
-                          max_parallel_experiments=20,
+                          max_parallel_experiments=4,
                           num_shots=1,
                          precision="single")
 
-# backend = qiskit.Aer.get_backend('qasm_simulator',
-#                                     max_parallel_threads=8,
-#                                     max_parallel_experiments=16,
-#                                     precision="single")
 num_qubits = 3
-size = 2**num_qubits
 num_layers = 2
+
+size = 2**num_qubits
 num_shots = 2**11
-tol = 1e-3
+tol = 1e-8
 # np.random.seed(1)
 
 filepath = "../../data/8x8/"
 matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
     .transpose(2, 0, 1).astype(np.float64)
-solutions = loadmat(filepath + "solutions.mat")['solutionData']
-optimals = np.loadtxt("../../experiments/vqls8x8/results/critical/OptimalParameters.out" )
+parameters = loadmat(filepath + "parameters.mat")['parameterData'].T
+optimals = np.loadtxt("../../experiments/vqls8x8/results/continuous/OptimalParameters_2022-11-02_17-19.txt")
 
 
 for matrix in matrices:
     matrix[matrix==2e4] = np.max(matrix)
+
 
 b = np.zeros((8,))
 b[3] = -100
@@ -48,6 +47,11 @@ b[6] = 100
 
 # matrices = np.array(matrices[0:2, :4, :4])
 # b = np.array([1] + [0]*3)
+# N = 2**num_qubits
+# matrices = np.random.rand(2, N, N)
+# matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
+# b = np.random.rand(N,1)
+
 
 ansatz = FixedAnsatz(num_qubits,
                    num_layers=num_layers,
@@ -61,26 +65,28 @@ print(qc)
 
 
 
+# ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits,
+#                    num_layers=num_layers)
+
+qc = ansatz.get_circuit()
+print(qc)
+
 vqls = VQLS(backend=backend,
             ansatz=ansatz)
 
 options = {'maxiter': 5000,
            'tol': tol,
            'callback':vqls.print_cost,
-           'rhobeg':2}
+           'rhobeg':1e-5}
 
 opt = COBYLA(**options)
 
 
-# x0 = optimals[0, :]
 
 
-# x0 = np.array([ 1.12883635,  1.79521215,  2.33015176,  2.3826475 , -0.87673251,
-#         1.68188146,  0.95878569,  0.97480226,  0.33004086,  0.9000187 ,
-#         0.52693897,  0.07575965,  1.95090849, -1.15411322,  0.12271046,
-#         1.11621051,  2.38753185,  0.4385254 ,  0.13091519])
+model = load_model("/home/archer/code/quantum/qlib/ml/model0")
 
-
+x0 = model.predict(parameters[0:1,:])
 
 for A in matrices[0:1]:
 
@@ -89,6 +95,8 @@ for A in matrices[0:1]:
     vqls.A = A
     vqls.b = b
 
-    xa = vqls.solve(optimizer=opt).get_solution(scaled=True)
+    xa = vqls.solve(optimizer=opt,
+                    initial_parameters=x0,
+                    rhobeg=1e-4).get_solution(scaled=True)
     ba = xa.dot(A)
     print(xa)

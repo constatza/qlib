@@ -15,27 +15,26 @@ from qlib.utils import states2qubits
 import matplotlib.pyplot as plt
 from qiskit import Aer
 
-size = 100
+size = 20
 
-x = np.linspace(0.01, 2*np.pi, size)
-
-y = np.linspace(2, 4*np.pi, size)
+x = np.linspace(2, 4, size)
+y = np.linspace(2, 4, size)
 
 xx, yy = np.meshgrid(x, y)
 
-# x = xx.ravel()
-# y = yy.ravel()
+x = xx.ravel()
+y = yy.ravel()
 
 
-x = np.linspace(1, 3, 100)
-y = np.linspace(2, 4, 100)
+# x = np.linspace(1, 3, 100)
+# y = np.linspace(2, 4, 100)
 
 matrices = np.array([[-0.5*x**2, x*y],
-                     [x*y, 2*y**2 + 1]])
+                     [x*y, 2*y**2 ]])
 
 
 backend = Aer.get_backend('statevector_simulator',
-                          max_parallel_experiments=4,
+                          max_parallel_experiments=10,
                           precision="single")
 
 matrices = matrices.transpose(2, 0, 1)
@@ -43,8 +42,8 @@ matrices = matrices.transpose(2, 0, 1)
 matrices = np.block([[3*matrices, 2*matrices],
                       [2*matrices, 4*matrices]])
 
-matrices = np.block([[3*matrices, 2*matrices],
-                      [2*matrices, 4*matrices]])
+# matrices = np.block([[3*matrices, 2*matrices],
+#                       [2*matrices, 4*matrices]])
 
 
 N = matrices.shape[2]
@@ -54,7 +53,7 @@ num_qubits = states2qubits(N)
 rhs = np.zeros((N,))
 rhs[0] = 1
 
-ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=3, max_parameters=19)
+ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1)
 # ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=1)
 num_parameters = ansatz.num_parameters
 qc = ansatz.get_circuit()
@@ -67,7 +66,7 @@ vqls = VQLS(ansatz=ansatz,
 
 optimizer = COBYLA(callback=vqls.print_cost)
 
-optimizer = POWELL(tol=1e-5)
+# optimizer = POWELL(tol=1e-5)
 
 experiment = Experiment(matrices, rhs,
                         optimizer=optimizer,
@@ -75,8 +74,7 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-experiment.run(save=False)
-
+experiment.run(save=True)
 
 optimals = experiment.optimal_parameters
 solutions = experiment.solutions

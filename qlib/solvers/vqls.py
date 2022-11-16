@@ -133,7 +133,6 @@ class FixedAnsatz(Ansatz):
                                         num_parameters_current,
                                         max_parameters)
 
-            print(circuit)
             circuit, num_parameters_current = self._apply_layer(circuit,
                                                                 parameters,
                                         1, num_qubits-1,
@@ -356,10 +355,10 @@ class VQLS:
         for i in irange:  # 2 parts: real, imag per term
             state = job[i].result().get_statevector()
             results[i-between[0]] = state.probabilities([0])[0]
-        else:
-            for i in irange:  # 2 parts: real, imag per term
-                counts = job[i].result().get_counts(i)
-                results[i-between[0]] = counts['0']/self.num_shots
+        # if else:
+        #     for i in irange:  # 2 parts: real, imag per term
+        #         counts = job[i].result().get_counts(i)
+        #         results[i-between[0]] = counts['0']/self.num_shots
 
         return results
 
@@ -383,7 +382,6 @@ class VQLS:
             betas[m, m] = np.complex(1, 0)
             for l in range(m):
                 betas[m, l] = betas_unique[m + l]
-
                 if l < m:
                     betas[l, m] = betas_unique[m + l].conj()
 
@@ -410,7 +408,6 @@ class VQLS:
 
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
-
 
 
     def print_cost(self, x):
@@ -509,12 +506,13 @@ class Experiment:
                  optimizer=None,
                  solver=VQLS(),
                  backend=backend,
-                 output_path='./'):
+                 output_path='./results/'):
 
         self.matrices = matrices
         self.target = rhs
         self.solver = solver
         self.optimizer = optimizer
+        self.output_path = output_path
         self.func_costs = None
         self.num_iterations = None
         self.num_func_evals = None
@@ -522,7 +520,8 @@ class Experiment:
         self.optimal_parameters = None
         self.solution_times = None
         self.transpilation_times = None
-        self.output_path = output_path
+        self.config = None
+        
 
     def run(self, nearby=False, initial_parameters=None, save=True,
             suffix=None, **kwargs):
@@ -544,6 +543,9 @@ class Experiment:
             suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
 
         t0 = time()
+        self.config = {'name': suffix,
+                       'optimizer': optimizer}
+        
         for i, A in enumerate(self.matrices):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
@@ -594,7 +596,7 @@ class Experiment:
                  "NumFunctionEvaluations": self.num_func_evals[-1],
                  "NumIterations": self.num_iterations[-1],
                  "TranspilationTimes": self.transpilation_times[-1]}
-
+        
         for name, array in names.items():
             filename = self.output_path + name + suffix + '.txt'
             if array is not None:

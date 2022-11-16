@@ -14,9 +14,6 @@ from scipy.io import loadmat
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input
 from keras.optimizers import SGD, RMSprop, Adam
-from scikeras.wrappers import KerasClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.neural_network import MLPRegressor
 from tensorflow.keras.layers import Normalization
 from tensorflow.keras import regularizers
 from utils import AngleScaler, SinCosTransformation
@@ -40,8 +37,9 @@ scale=1/2
 
 # X = scalerX().fit_transform(X_raw)
 X = X_raw
+y = y_raw
 scalerY = SinCosTransformation(scale=scale)
-y = scalerY(y_raw).numpy()
+# y = scalerY(y_raw).numpy()
 
 
 
@@ -70,17 +68,17 @@ original_dims = X_train.shape[1] # 1000x3
 output_dims = y_train.shape[1] # 1000x19
 
 
-layer_size = 20
+layer_size = 8
 
 model = Sequential([Input(shape=(original_dims,)),
                     scalerX,
                     Dense(layer_size,
                           input_shape=(original_dims,),
                           activation='tanh'),
-                    Dense(layer_size, activation='tanh'),
-                    Dense(output_dims//2, activation='linear',
+                    # Dense(layer_size, activation='tanh'),
+                    Dense(output_dims, activation='linear',
                           activity_regularizer=regularizers.L2(1e-12)),
-                    scalerY,
+                    # scalerY,
     ])
 
 
@@ -104,7 +102,7 @@ loss = model.evaluate(X_test, y_test)
 
 y_predicted = model.predict(X_test)
 
-step=5
+step=1
 xx = X_test[::step, 1]
 yp = y_predicted[::step, 2]
 yt = y_test[::step, 2]

@@ -80,4 +80,6 @@ experiment = Experiment(matrices, rhs,
 
 logger = FileLogger([name for name in experiment.data.keys()])
 
-experiment.run(logger=logger)
+experiment.run(nearby=True,
+                logger=logger, dateit=False
+               )

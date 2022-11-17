@@ -78,8 +78,10 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-logger = FileLogger([name for name in experiment.data.keys()])
+logger = FileLogger([name for name in experiment.data.keys()],
+        directory='./results/'
+        )
 
 experiment.run(nearby=True,
-                logger=logger, dateit=False
+        logger=logger, dateit=True
                )

@@ -15,7 +15,7 @@ from qlib.utils import states2qubits
 import matplotlib.pyplot as plt
 from qiskit import Aer
 
-size = 20
+size = 10
 
 x = np.linspace(2, 4, size)
 y = np.linspace(2, 4, size)
@@ -25,6 +25,7 @@ xx, yy = np.meshgrid(x, y)
 x = xx.ravel()
 y = yy.ravel()
 
+np.savetxt('parameters.in', np.hstack([x[:, None], y[:, None]]))
 
 # x = np.linspace(1, 3, 100)
 # y = np.linspace(2, 4, 100)
@@ -53,7 +54,9 @@ num_qubits = states2qubits(N)
 rhs = np.zeros((N,))
 rhs[0] = 1
 
-ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1)
+ansatz = FixedAnsatz(num_qubits=num_qubits, num_layers=1,
+                     max_parameters=3)
+
 # ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits, num_layers=1)
 num_parameters = ansatz.num_parameters
 qc = ansatz.get_circuit()
@@ -74,7 +77,7 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-experiment.run(save=True)
+experiment.run(save=False)
 
 optimals = experiment.optimal_parameters
 solutions = experiment.solutions
@@ -84,5 +87,3 @@ fig, ax = plt.subplots()
 ax.plot(x, np.sin(optimals))
 ax.plot(x, np.sin(optimals[:, 0] + optimals[:, 1]))
 ax.set_xlabel('x1')
-
-

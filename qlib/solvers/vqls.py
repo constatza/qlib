@@ -9,12 +9,14 @@ Created on Wed Mar 23 12:12:34 2022
 import numpy as np
 from time import time
 from scipy.optimize import minimize
+
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, \
     transpile, Aer, execute
 from qiskit.circuit import ParameterVector
 from qlib.utils import LinearDecompositionOfUnitaries, print_time, \
     unitary_from_column_vector, states2qubits
 from qiskit.circuit.library import RealAmplitudes
+
 
 backend = Aer.get_backend('statevector_simulator')
 
@@ -71,7 +73,7 @@ class RealAmplitudesAnsatz(Ansatz):
                  num_qubits,
                  num_layers=1,
                  optimization_level=3,
-                 backend=None, 
+                 backend=None,
                  *args, **kwargs):
 
         super().__init__(num_qubits,
@@ -106,16 +108,14 @@ class FixedAnsatz(Ansatz):
         num_qubits = self.num_qubits
         num_layers = self.num_layers
 
-
         circuit = QuantumCircuit(num_qubits, name='V')
         num_parameters = 2*num_layers * \
             (num_qubits//2 + (num_qubits-1)//2) + num_qubits
 
-
         if self.max_parameters is not None:
-             max_parameters = self.max_parameters
+            max_parameters = self.max_parameters
         else:
-             max_parameters = num_parameters
+            max_parameters = num_parameters
 
         parameters = ParameterVector('a', max_parameters)
 
@@ -129,15 +129,15 @@ class FixedAnsatz(Ansatz):
             iters += 1
             circuit, num_parameters_current = self._apply_layer(circuit,
                                                                 parameters,
-                                        0, num_qubits-1,
-                                        num_parameters_current,
-                                        max_parameters)
+                                                                0, num_qubits-1,
+                                                                num_parameters_current,
+                                                                max_parameters)
 
             circuit, num_parameters_current = self._apply_layer(circuit,
                                                                 parameters,
-                                        1, num_qubits-1,
-                                        num_parameters_current,
-                                        max_parameters)
+                                                                1, num_qubits-1,
+                                                                num_parameters_current,
+                                                                max_parameters)
 
         self.circuit = circuit
         return self
@@ -156,7 +156,8 @@ class FixedAnsatz(Ansatz):
             for iz in range(start, end, 2):
                 circuit.cz(iz, iz+1)
                 for j in range(2):
-                    circuit.ry(parameters[num_parameters_current], qubits[iz+j])
+                    circuit.ry(
+                        parameters[num_parameters_current], qubits[iz+j])
                     num_parameters_current += 1
 
                     if num_parameters_current >= max_parameters:
@@ -257,7 +258,6 @@ class VQLS:
                  optimization_level=3,
                  num_shots=1):
 
-
         self.b = b
         self.A = A
         self.ansatz = ansatz
@@ -275,7 +275,6 @@ class VQLS:
         self._circuits_ready = False
         self._projector_instance = None
 
-
     def delete_matrix_attrs(self):
         self.num_unitaries = None
         self.num_jobs = None
@@ -290,14 +289,14 @@ class VQLS:
 
     def construct_circuits(self):
         self.check_linear_system_exists()
-        self._projector_instance = self.projector(self.lcu, self.ansatz, self.Ub)
+        self._projector_instance = self.projector(
+            self.lcu, self.ansatz, self.Ub)
 
         if self.ansatz is None:
             num_working_qubits = states2qubits(self.b.shape[0])
             self.num_working_qubits = num_working_qubits
             self.ansatz = FixedAnsatz(num_working_qubits,
                                       backend=backend)
-
 
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
@@ -319,7 +318,6 @@ class VQLS:
         self.transpilation_time = transpilation_time
         self.num_jobs = len(self.circuits)
         self._circuits_ready = False
-
 
     def construct_term(self, mu, nu, j):
 
@@ -409,11 +407,10 @@ class VQLS:
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
 
-
     def print_cost(self, x):
         print("{:.5e}".format(self.cost))
 
-    def solve(self, optimizer=None, initial_parameters=None,**kwargs):
+    def solve(self, optimizer=None, initial_parameters=None, **kwargs):
 
         self.check_linear_system_exists()
         if not self._circuits_ready:
@@ -458,7 +455,7 @@ class VQLS:
         if scaled:
             b_up_to_constant = x.dot(self.matrix)
             constants = self.target/b_up_to_constant
-            constant = np.mean(constants[constants!=0])
+            constant = np.mean(constants[constants != 0])
             xopt = constant*x
         else:
             xopt = x
@@ -505,103 +502,73 @@ class Experiment:
                  rhs,
                  optimizer=None,
                  solver=VQLS(),
-                 backend=backend,
-                 output_path='./results/'):
+                 backend=backend):
 
         self.matrices = matrices
         self.target = rhs
         self.solver = solver
         self.optimizer = optimizer
-        self.output_path = output_path
-        self.func_costs = None
-        self.num_iterations = None
-        self.num_func_evals = None
-        self.solutions = None
-        self.optimal_parameters = None
-        self.solution_times = None
-        self.transpilation_times = None
         self.config = None
-        
+        self.data = {"Solutions": [],
+                     "OptimalParameters": [],
+                     "SolutionTimes": [],
+                     "CostFunctionMinima": [],
+                     "NumFunctionEvaluations":[],
+                     "NumIterations": [],
+                     "TranspilationTimes": []}
 
-    def run(self, nearby=False, initial_parameters=None, save=True,
-            suffix=None, **kwargs):
-        b = self.target
+
+    def run(self, nearby=False, initial_parameters=None,
+            logger=None, **kwargs):
+
+
         solver = self.solver
+        solver.b = self.target
         optimizer = self.optimizer
-        solver.b = b
+        data = self.data
 
-        self.num_iterations = []
-        self.num_func_evals = []
-        self.func_costs = []
-        self.solutions = []
-        self.optimal_parameters = []
-        self.transpilation_times = []
-        self.solution_times = []
 
-        if suffix is None:
-            from datetime import datetime
-            suffix = datetime.today().strftime("_%Y-%m-%d_%H-%M")
 
         t0 = time()
-        self.config = {'name': suffix,
-                       'optimizer': optimizer}
-        
         for i, A in enumerate(self.matrices):
             print("# --------------------")
             print(f'# Experiment: {i:d}')
 
             solver.A = A
 
-            if nearby & i>0:
-                initial_parameters = self.optimal_parameters[-1]
+            if nearby & i > 0:
+                initial_parameters = self.data['OptimalParameters'][-1]
                 optimizer.set_options(**kwargs)
 
             solver.solve(optimizer=optimizer,
                          initial_parameters=initial_parameters)
 
 
-            self.num_iterations.append(solver.result.nit)
-            self.func_costs.append(solver.result.fun)
-            self.num_func_evals.append(solver.result.nfev)
-            self.optimal_parameters.append(solver.result.x)
-            self.solutions.append(solver.get_solution(scaled=True))
-            self.transpilation_times.append(solver.transpilation_time)
-            self.solution_times.append(solver.solution_time)
+            result = solver.result
+            data['NumIterations'].append(result.nit)
+            data['CostFunctionMinima'].append(result.fun)
+            data['NumFunctionEvaluations'].append(result.nfev)
+            data['OptimalParameters'].append(result.x)
+            data['Solutions'].append(solver.get_solution(scaled=True))
+            data['TranspilationTimes'].append(solver.transpilation_time)
+            data['SolutionTimes'].append(solver.solution_time)
 
-            if save:
-                self.save(suffix=suffix)
-
+            if logger is not None:
+                # Must be the same order as filenames above!!
+                logger.save([array[-1] for array in data.values()])
 
             print(f"# Function Value: {solver.result.fun:1.5e}")
             print_time(time() - t0, msg="Total Simulation")
 
 
-        self.num_iterations = np.array(self.num_iterations)
-        self.func_costs = np.array(self.func_costs)
-        self.num_func_evals = np.array(self.num_func_evals)
-        self.optimal_parameters = np.array(self.optimal_parameters)
-        self.solutions = np.array(self.solutions)
-        self.transpilation_times = np.array(self.transpilation_times)
-        self.solution_times = np.array(self.solution_times)
+        self.data = {key: np.array(value) for key, value in data.items()}
 
         return self
 
-    def save(self, suffix=''):
-        """Save experiments as .npy binaries"""
 
-        names = {"Solutions": self.solutions[-1],
-                 "OptimalParameters":self.optimal_parameters[-1],
-                 "SolutionTimes": self.solution_times[-1],
-                 "MinFunctionValues": self.func_costs[-1],
-                 "NumFunctionEvaluations": self.num_func_evals[-1],
-                 "NumIterations": self.num_iterations[-1],
-                 "TranspilationTimes": self.transpilation_times[-1]}
-        
-        for name, array in names.items():
-            filename = self.output_path + name + suffix + '.txt'
-            if array is not None:
-                with open(filename, 'a') as f:
-                    np.savetxt(f, np.array([array]))
+
+
+
 
 
 
@@ -609,4 +576,8 @@ class Experiment:
 
 if __name__ == '__main__':
 
-    pass
+    filenames = ['one', 'twp', 'wtf']
+
+    wr = FileWriterIncremental(filenames, dateit=False)
+    for i in range(10):
+        wr.write([i, None, 3])

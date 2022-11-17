@@ -160,7 +160,8 @@ class FileLogger:
         for name, array in zip(self.paths, data_list):
             if array is not None:
                 with open(name, 'a') as f:
-                    if type(array) is not np.ndarray:
-                        array = np.array([array])
-
+                    array = np.atleast_2d(np.array(array))
+                    if array.ndim > 2:
+                        dims = array.shape
+                        array = array.reshape((-1, dims[1]))
                     np.savetxt(f, array)

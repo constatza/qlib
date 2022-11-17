@@ -36,7 +36,7 @@ matrices = np.array([[-0.5*x**2, x*y],
 
 
 backend = Aer.get_backend('statevector_simulator',
-                          max_parallel_experiments=10,
+                          max_parallel_experiments=12,
                           precision="single")
 
 matrices = matrices.transpose(2, 0, 1)
@@ -80,4 +80,6 @@ experiment = Experiment(matrices, rhs,
 
 logger = FileLogger([name for name in experiment.data.keys()])
 
-experiment.run(logger=logger)
+experiment.run(nearby=True,
+                logger=logger, dateit=False
+               )

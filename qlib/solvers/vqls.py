@@ -569,15 +569,6 @@ class Experiment:
 
 
 
-
-
-
-
-
 if __name__ == '__main__':
+    pass
 
-    filenames = ['one', 'twp', 'wtf']
-
-    wr = FileWriterIncremental(filenames, dateit=False)
-    for i in range(10):
-        wr.write([i, None, 3])

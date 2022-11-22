@@ -11,14 +11,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import seaborn as sns
 import pandas as pd
+# import scienceplots
 
+plt.style.use(['science', 'ieee', 'no-latex'])
 
 plt.close('all')
 
-
-
 experiments_dir = "/home/archer/code/quantum/experiments/custom4x4/results/2022-11-17_21-09"
-
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
 input_path_physical_parameters = os.path.join(experiments_dir, "parameters.in")
@@ -38,7 +37,6 @@ xdim = X.shape[1]
 #######
 # DRAW
 #######
-
 
 
 how_many = ydim
@@ -75,4 +73,4 @@ ax.set_xlabel('$x_1$')
 ax.set_ylabel('$x_2$')
 fig.colorbar(plot)
 
-# fig.savefig('untrainable.png', dpi=400)
+fig.savefig(os.path.join(experiments_dir,'img/angle3-vs-x1_x2.png'), dpi=400)

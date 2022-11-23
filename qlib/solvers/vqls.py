@@ -563,8 +563,6 @@ class Experiment:
                          initial_parameters=initial_parameters, 
                          **kwargs)
             
-        
-
 
             result = solver.result
             data['NumIterations'].append(result.nit)

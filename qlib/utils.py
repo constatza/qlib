@@ -129,7 +129,7 @@ def print_time(t, msg=''):
 
 class FileLogger:
 
-    def __init__(self, filenames, directory='./results/',
+    def __init__(self, filenames, directory='./output/',
                  subdir='',
                  dateit=True):
 

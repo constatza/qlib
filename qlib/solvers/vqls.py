@@ -407,7 +407,7 @@ class VQLS:
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
 
-    def print_cost(self, x):
+    def print_cost(self, x, *args):
         print("{:.5e}".format(self.cost))
 
     def solve(self, optimizer=None, initial_parameters=None, **kwargs):
@@ -417,10 +417,7 @@ class VQLS:
             self.construct_circuits()
 
         if optimizer is None:
-            try:
-                optimizer = self.optimizer
-            except:
-                raise ValueError("No optimizer")
+            optimizer = self.optimizer
 
         if initial_parameters is None:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
@@ -431,14 +428,18 @@ class VQLS:
         print("# Optimizing")
         t0 = time()
         objective_func = self.local_cost
-        if type(optimizer) is str:
+        
+        if type(optimizer)==str:
             result = minimize(objective_func,
                               method=optimizer,
                               x0=parameters0,
-                              callback=self.print_cost)
+                              callback=self.print_cost,
+                              **kwargs)
+        
         else:
             result = optimizer.minimize(objective_func,
-                                        x0=parameters0)
+                                        x0=parameters0,
+                                        **kwargs)
 
         solution_time = time() - t0
         print_time(solution_time, msg="Solution")
@@ -551,11 +552,14 @@ class Experiment:
             initial_parameters = self.initial_parameter_predictor\
                 .predict_solution(y=data['OptimalParameters'])
 
-            if i>0:
+            if i>0 and not (type(optimizer)==str  or optimizer is None):
                 optimizer.set_options(**kwargs)
 
             solver.solve(optimizer=optimizer,
-                         initial_parameters=initial_parameters)
+                         initial_parameters=initial_parameters, 
+                         **kwargs)
+            
+        
 
 
             result = solver.result

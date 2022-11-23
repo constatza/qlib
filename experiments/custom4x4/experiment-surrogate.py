@@ -18,16 +18,16 @@ from qiskit.circuit.library import RealAmplitudes
 from qlib.utils import states2qubits, FileLogger
 import matplotlib.pyplot as plt
 from qiskit import Aer
+from scipy.optimize import basinhopping
 
 
-experiments_dir = "./results/2022-11-17_21-09"
-input_path_physical_parameters = os.path.join(experiments_dir, "parameters.in")
+initial_parameter_provider = None
+input_path_physical_parameters = "./input/parameters.in"
 
 parameters = np.loadtxt(input_path_physical_parameters)
 
 x = parameters[:, 0]
 y = parameters[:, 1]
-
 
 
 matrices = np.array([[-0.5*x**2, x*y],
@@ -64,23 +64,37 @@ vqls = VQLS(
             )
 
 
-optimizer = COBYLA(callback=vqls.print_cost,
-                   tol=1e-6,
-                   rhobeg=1e-1)
 
-optimizer = POWELL()
+optimizer = 'bfgs'
+optimization_options = {'tol': 1e-4}
 
 model = load_model("./model")
 
 
-exp = Experiment(matrices, rhs,
-                 optimizer=optimizer,
-                 solver=vqls,
+if initial_parameter_provider=='surrogate':
+    predictor = SolutionPredictorSurrogate(model, parameters)
+elif initial_parameter_provider is None:
+    predictor = None
 
+experiment = Experiment(matrices, rhs,
+                  optimizer=optimizer,
+                 solver=vqls,
+                   initial_parameter_predictor=predictor,
                  backend=backend)
 
-exp.run(rhobeg=1e-3)
+
+logger = FileLogger([name for name in experiment.data.keys()], 
+                    dateit=True)
 
 
-# cobyla 18
-# powell 60
+experiment.run(
+    # logger=logger,
+    **optimization_options
+               )
+
+
+
+
+#
+# cobyla 18s
+# powell 70s

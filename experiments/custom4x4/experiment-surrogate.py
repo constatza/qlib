@@ -22,6 +22,7 @@ from scipy.optimize import basinhopping
 
 
 initial_parameter_provider = None
+outname = 'last'
 input_path_physical_parameters = "./input/parameters.in"
 
 parameters = np.loadtxt(input_path_physical_parameters)
@@ -83,8 +84,9 @@ experiment = Experiment(matrices, rhs,
                  backend=backend)
 
 
-logger = FileLogger([name for name in experiment.data.keys()], 
-                    dateit=True)
+logger = FileLogger([name for name in experiment.data.keys()],
+                    subdir=outname,
+                    dateit=False)
 
 
 experiment.run(

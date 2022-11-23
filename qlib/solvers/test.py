@@ -14,7 +14,7 @@ from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_aer.backends.aer_simulator import AerSimulator
-from keras.models import load_model
+
 
 backend = Aer.get_backend('statevector_simulator',
                           max_parallel_experiments=4,
@@ -32,7 +32,7 @@ tol = 1e-8
 filepath = "../../data/8x8/"
 matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
     .transpose(2, 0, 1).astype(np.float64)
-parameters = loadmat(filepath + "parameters.mat")['parameterData'].T
+
 optimals = np.loadtxt("../../experiments/vqls8x8/results/continuous/OptimalParameters_2022-11-02_17-19.txt")
 
 
@@ -84,9 +84,7 @@ opt = COBYLA(**options)
 
 
 
-model = load_model("/home/archer/code/quantum/qlib/ml/model0")
 
-x0 = model.predict(parameters[0:1,:])
 
 for A in matrices[0:1]:
 
@@ -96,7 +94,6 @@ for A in matrices[0:1]:
     vqls.b = b
 
     xa = vqls.solve(optimizer=opt,
-                    initial_parameters=x0,
                     rhobeg=1e-4).get_solution(scaled=True)
     ba = xa.dot(A)
     print(xa)

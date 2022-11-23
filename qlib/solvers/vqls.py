@@ -424,6 +424,7 @@ class VQLS:
 
         if initial_parameters is None:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
+            print('Random initial parameters')
         else:
             parameters0 = initial_parameters
 
@@ -502,6 +503,7 @@ class Experiment:
                  rhs,
                  optimizer=None,
                  solver=VQLS(),
+                 initial_parameter_predictor=None,
                  backend=backend):
 
         self.matrices = matrices
@@ -509,6 +511,10 @@ class Experiment:
         self.solver = solver
         self.optimizer = optimizer
         self.config = None
+        self.system_size = rhs.shape[-1]
+
+
+
         self.data = {"Solutions": [],
                      "OptimalParameters": [],
                      "SolutionTimes": [],
@@ -517,8 +523,10 @@ class Experiment:
                      "NumIterations": [],
                      "TranspilationTimes": []}
 
+        self.initial_parameter_predictor = initial_parameter_predictor
 
-    def run(self, nearby=False, initial_parameters=None,
+
+    def run(self,
             logger=None, **kwargs):
 
 
@@ -526,6 +534,10 @@ class Experiment:
         solver.b = self.target
         optimizer = self.optimizer
         data = self.data
+
+        if self.initial_parameter_predictor is None:
+            num_parameters = self.solver.ansatz.num_parameters
+            self.initial_parameter_predictor = SolutionPredictorLastBest(num_parameters)
 
 
 
@@ -536,8 +548,10 @@ class Experiment:
 
             solver.A = A
 
-            if nearby & i > 0:
-                initial_parameters = self.data['OptimalParameters'][-1]
+            initial_parameters = self.initial_parameter_predictor\
+                .predict_solution(y=data['OptimalParameters'])
+
+            if i>0:
                 optimizer.set_options(**kwargs)
 
             solver.solve(optimizer=optimizer,
@@ -566,9 +580,69 @@ class Experiment:
         return self
 
 
+class SolutionPredictor:
+
+    def __init__(self, size):
+        self.size = (size,)
+        self.iteration = -1
+
+    def predict_solution(self, *args, **kwargs):
+        self.iteration += 1
+        return self.predict( *args, **kwargs)
+
+    def predict(self):
+        pass
+
+
+class SolutionPredictorRandom(SolutionPredictor):
+
+    def __init__(self, size):
+        super().__init__(size)
+
+    def predict(self, *args, **kwargs):
+        return np.random.rand(self.size)
+
+
+class SolutionPredictorConstant(SolutionPredictor):
+
+    def __init__(self, size, value=0):
+        super().__init__(size)
+        self.value = value
+
+    def predict(self, *args, **kwargs):
+        return np.full(self.size, self.value)
+
+
+class SolutionPredictorLastBest(SolutionPredictor):
+
+    def __init__(self, size):
+        super().__init__(size)
+
+
+    def predict(self, y, *args, **kwargs):
+
+        if self.iteration>0:
+            return y[self.iteration-1]
+        else:
+            return np.random.rand(*self.size)
+
+
+class SolutionPredictorSurrogate(SolutionPredictor):
+
+    def __init__(self, model, X):
+        size = model.layers[-1].output.shape[-1]
+        super().__init__(size)
+        self.model = model
+        self.X = X
+
+    def predict(self, *args, **kwargs):
+        return self.model.predict(self.X[self.iteration])
+
+
+
+
 
 
 
 if __name__ == '__main__':
     pass
-

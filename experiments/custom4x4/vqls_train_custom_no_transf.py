@@ -70,14 +70,14 @@ original_dims = X_train.shape[1] # 1000x3
 output_dims = y_train.shape[1] # 1000x19
 
 
-layer_size = 3
+layer_size = 10
 
 model = Sequential([Input(shape=(original_dims,)),
                     scalerX,
                     Dense(layer_size,
                           input_shape=(original_dims,),
                           activation='tanh'),
-                    # Dense(layer_size, activation='tanh'),
+                    Dense(layer_size, activation='tanh'),
                     Dense(output_dims, activation='linear'),
     ])
 
@@ -96,8 +96,8 @@ model.compile(loss='huber',
 
 
 history = model.fit(x=X_train, y=y_train,
-                    batch_size=5,
-                    epochs=50,
+                    batch_size=10,
+                    epochs=200,
                     validation_split=0.3)
 
 loss = model.evaluate(X_test, y_test)
@@ -121,7 +121,7 @@ plt.legend()
 
 
 
-model.pop()
+
 y_predicted = model.predict(X_test)
 
 # plt.plot(xx, y_predicted[:, 2], 'o',

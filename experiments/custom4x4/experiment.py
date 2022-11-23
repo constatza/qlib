@@ -70,7 +70,7 @@ vqls = VQLS(ansatz=ansatz,
 
 optimizer = COBYLA(callback=vqls.print_cost, tol=1e-6)
 
-# optimizer = POWELL(tol=1e-5)
+optimizer = POWELL(tol=1e-10)
 
 experiment = Experiment(matrices, rhs,
                         optimizer=optimizer,
@@ -78,10 +78,8 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-logger = FileLogger([name for name in experiment.data.keys()],
-        directory='./results/'
-        )
+logger = FileLogger([name for name in experiment.data.keys()] )
 
-experiment.run(nearby=True,
-        logger=logger, dateit=True
-               )
+
+
+experiment.run(logger=None, dateit=True)

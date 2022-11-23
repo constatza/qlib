@@ -411,7 +411,7 @@ class VQLS:
         self.cost = 1/2 - delta_sum/beta_norm/num_working_qubits/2
         return self.cost
 
-    def print_cost(self, x):
+    def print_cost(self, x, *args):
         print("{:.5e}".format(self.cost))
 
     def solve(self, optimizer=None, initial_parameters=None, **kwargs):
@@ -421,27 +421,29 @@ class VQLS:
             self.construct_circuits()
 
         if optimizer is None:
-            try:
-                optimizer = self.optimizer
-            except:
-                raise ValueError("No optimizer")
+            optimizer = self.optimizer
 
         if initial_parameters is None:
             parameters0 = np.random.rand(self.ansatz.num_parameters)
+            print('Random initial parameters')
         else:
             parameters0 = initial_parameters
 
         print("# Optimizing")
         t0 = time()
         objective_func = self.local_cost
-        if type(optimizer) is str:
+        
+        if type(optimizer)==str:
             result = minimize(objective_func,
                               method=optimizer,
                               x0=parameters0,
-                              callback=self.print_cost)
+                              callback=self.print_cost,
+                              **kwargs)
+        
         else:
             result = optimizer.minimize(objective_func,
-                                        x0=parameters0)
+                                        x0=parameters0,
+                                        **kwargs)
 
         solution_time = time() - t0
         print_time(solution_time, msg="Solution")
@@ -506,6 +508,7 @@ class Experiment:
                  rhs,
                  optimizer=None,
                  solver=VQLS(),
+                 initial_parameter_predictor=None,
                  backend=backend):
 
         self.matrices = matrices
@@ -513,6 +516,10 @@ class Experiment:
         self.solver = solver
         self.optimizer = optimizer
         self.config = None
+        self.system_size = rhs.shape[-1]
+
+
+
         self.data = {"Solutions": [],
                      "OptimalParameters": [],
                      "SolutionTimes": [],
@@ -521,8 +528,10 @@ class Experiment:
                      "NumIterations": [],
                      "TranspilationTimes": []}
 
+        self.initial_parameter_predictor = initial_parameter_predictor
 
-    def run(self, nearby=False, initial_parameters=None,
+
+    def run(self,
             logger=None, **kwargs):
 
 
@@ -530,6 +539,10 @@ class Experiment:
         solver.b = self.target
         optimizer = self.optimizer
         data = self.data
+
+        if self.initial_parameter_predictor is None:
+            num_parameters = self.solver.ansatz.num_parameters
+            self.initial_parameter_predictor = SolutionPredictorLastBest(num_parameters)
 
 
 
@@ -540,12 +553,17 @@ class Experiment:
 
             solver.A = A
 
-            if nearby & i > 0:
-                initial_parameters = self.data['OptimalParameters'][-1]
+            initial_parameters = self.initial_parameter_predictor\
+                .predict_solution(y=data['OptimalParameters'])
+
+            if i>0 and not (type(optimizer)==str  or optimizer is None):
                 optimizer.set_options(**kwargs)
 
             solver.solve(optimizer=optimizer,
-                         initial_parameters=initial_parameters)
+                         initial_parameters=initial_parameters, 
+                         **kwargs)
+            
+        
 
 
             result = solver.result
@@ -570,7 +588,63 @@ class Experiment:
         return self
 
 
+class SolutionPredictor:
 
+    def __init__(self, size):
+        self.size = (size,)
+        self.iteration = -1
+
+    def predict_solution(self, *args, **kwargs):
+        self.iteration += 1
+        return self.predict( *args, **kwargs)
+
+    def predict(self):
+        pass
+
+
+class SolutionPredictorRandom(SolutionPredictor):
+
+    def __init__(self, size):
+        super().__init__(size)
+
+    def predict(self, *args, **kwargs):
+        return np.random.rand(self.size)
+
+
+class SolutionPredictorConstant(SolutionPredictor):
+
+    def __init__(self, size, value=0):
+        super().__init__(size)
+        self.value = value
+
+    def predict(self, *args, **kwargs):
+        return np.full(self.size, self.value)
+
+
+class SolutionPredictorLastBest(SolutionPredictor):
+
+    def __init__(self, size):
+        super().__init__(size)
+
+
+    def predict(self, y, *args, **kwargs):
+
+        if self.iteration>0:
+            return y[self.iteration-1]
+        else:
+            return np.random.rand(*self.size)
+
+
+class SolutionPredictorSurrogate(SolutionPredictor):
+
+    def __init__(self, model, X):
+        size = model.layers[-1].output.shape[-1]
+        super().__init__(size)
+        self.model = model
+        self.X = X
+
+    def predict(self, *args, **kwargs):
+        return self.model.predict(self.X[self.iteration])
 
 
 
@@ -579,9 +653,4 @@ class Experiment:
 
 
 if __name__ == '__main__':
-
-    filenames = ['one', 'twp', 'wtf']
-
-    wr = FileWriterIncremental(filenames, dateit=False)
-    for i in range(10):
-        wr.write([i, None, 3])
+    pass

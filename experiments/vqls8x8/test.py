@@ -15,12 +15,13 @@ from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_aer.backends.aer_simulator import AerSimulator
 
+
 backend = Aer.get_backend('statevector_simulator',
+                          max_parallel_experiments=4,
+                          num_shots=1,
                          precision="single")
 
-backend.set_options(device='GPU')
-
-num_qubits = 4
+num_qubits = 3
 num_layers = 2
 
 size = 2**num_qubits
@@ -46,15 +47,15 @@ b[6] = 100
 
 # matrices = np.array(matrices[0:2, :4, :4])
 # b = np.array([1] + [0]*3)
-N = 2**num_qubits
-matrices = np.random.rand(2, N, N)
-matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
-b = np.random.rand(N,1)
+# N = 2**num_qubits
+# matrices = np.random.rand(2, N, N)
+# matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
+# b = np.random.rand(N,1)
 
 
 ansatz = FixedAnsatz(num_qubits,
                    num_layers=num_layers,
-                   max_parameters=17)
+                   max_parameters=7)
 qc = ansatz.get_circuit()
 print(qc)
 
@@ -76,7 +77,7 @@ vqls = VQLS(backend=backend,
 options = {'maxiter': 5000,
            'tol': tol,
            'callback':vqls.print_cost,
-           'rhobeg':1e-1}
+           'rhobeg':1e-5}
 
 opt = COBYLA(**options)
 
@@ -89,11 +90,6 @@ for A in matrices[0:1]:
     vqls.b = b
 
     xa = vqls.solve(optimizer=opt,
-<<<<<<< HEAD
- #                   initial_parameters=x0,
-                    rhobeg=1e-1).get_solution(scaled=True)
-=======
                     rhobeg=1e-4).get_solution(scaled=True)
->>>>>>> b2d6f746a23826a353b678c0b9be931902e9811f
     ba = xa.dot(A)
     print(xa)

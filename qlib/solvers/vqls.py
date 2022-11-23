@@ -182,12 +182,12 @@ class LocalProjector:
         working_reg = self.working_reg
 
         inv = '\dagger'
-        A_mu = self.lcu.gates[mu].control(1, label=f'$A_{mu}$')
+        A_mu = self.lcu.gates[mu].control(1, label=f'A_{mu}')
         A_nu = self.lcu.gates[nu].adjoint().control(1,
-                                                    label=f'$A^{inv:s}_{nu:d}$')
+                                                    label=f'A^{inv:s}_{nu:d}')
 
         qc = QuantumCircuit(control_reg, working_reg,
-                            name='$\delta_{\mu \nu}$')
+                            name=f'δ_{mu}{nu}')
         try:
             ansatz_circuit = self.ansatz.get_circuit()
         except AttributeError:
@@ -305,14 +305,18 @@ class VQLS:
             for m in range(num_unitaries):
                 for n in range(m+1):
                     real, imag = self.construct_term(m, n, j=j)
+                    real, imag  = transpile([real, imag],
+                            backend=self.backend,
+                            )
                     circuits.append(real)
                     circuits.append(imag)
 
         print("# Transpiling")
         t0 = time()
-        self.circuits = transpile(circuits,
-                                  backend=self.backend,
-                                  optimization_level=self.optimization_level)
+        self.circuits = circuits
+       # self.circuits = transpile(circuits,
+       #                           backend=self.backend,
+       #                           optimization_level=self.optimization_level)
         transpilation_time = time() - t0
         print_time(transpilation_time)
         self.transpilation_time = transpilation_time

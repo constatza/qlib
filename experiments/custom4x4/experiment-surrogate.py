@@ -16,14 +16,13 @@ from qlib.solvers.vqls import VQLS, FixedAnsatz, Experiment, RealAmplitudesAnsat
 from qiskit.algorithms.optimizers import COBYLA, POWELL
 from qiskit.circuit.library import RealAmplitudes
 from qlib.utils import states2qubits, FileLogger
-import matplotlib.pyplot as plt
 from qiskit import Aer
 from scipy.optimize import basinhopping
 
 
-initial_parameter_provider = None
+initial_parameter_provider = 'surrogate'
 outname = 'last'
-input_path_physical_parameters = "./input/parameters.in"
+input_path_physical_parameters = os.path.join("input", "parameters.in")
 
 parameters = np.loadtxt(input_path_physical_parameters)
 
@@ -69,7 +68,7 @@ vqls = VQLS(
 optimizer = 'bfgs'
 optimization_options = {'tol': 1e-4}
 
-model = load_model("./model")
+model = load_model(os.path.join(".", "model"))
 
 
 if initial_parameter_provider=='surrogate':
@@ -90,7 +89,7 @@ logger = FileLogger([name for name in experiment.data.keys()],
 
 
 experiment.run(
-    # logger=logger,
+    logger=logger,
     **optimization_options
                )
 

@@ -26,7 +26,7 @@ from qlib.ml.utils import SinCosTransformation
 import matplotlib.pyplot as plt
 import os
 
-experiments_dir = "/home/archer/code/quantum/experiments/custom4x4/results/2022-11-17_21-09"
+experiments_dir = os.path.join("results", "2022-11-17_21-09")
 
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")

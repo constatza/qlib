@@ -35,6 +35,7 @@ matrices = np.array([[-0.5*x**2, x*y],
 
 
 backend = Aer.get_backend('statevector_simulator',
+                        device='gpu',
                           max_parallel_experiments=12,
                           precision="single")
 
@@ -68,8 +69,7 @@ vqls = VQLS(
 optimizer = 'bfgs'
 optimization_options = {'tol': 1e-4}
 
-model = load_model(os.path.join(".", "model"))
-
+model = load_model('model')
 
 if initial_parameter_provider=='surrogate':
     predictor = SolutionPredictorSurrogate(model, parameters)

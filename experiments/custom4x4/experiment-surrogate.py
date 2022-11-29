@@ -21,7 +21,7 @@ from qiskit import Aer
 from scipy.optimize import basinhopping
 
 
-initial_parameter_provider = None
+initial_parameter_provider = 'surrogate'
 outname = 'last'
 input_path_physical_parameters = "./input/parameters.in"
 

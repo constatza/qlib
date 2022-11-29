@@ -257,11 +257,11 @@ cython_debug/
 # End of https://www.toptal.com/developers/gitignore/api/linux,python,jupyternotebooks,images
 
 ## Custom ##
-*output
 *.txt
 *.csv
 *.dat
 *.ipynb_checkpoints
 *.ipynb
-.venv
 nohup.*
+.vscode/
+

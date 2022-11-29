@@ -301,6 +301,7 @@ class VQLS:
         num_qubits = self.num_working_qubits + 1
         num_unitaries = self.lcu.num_unitaries
         circuits = []
+        t0 = time()
         for j in range(num_qubits):
             for m in range(num_unitaries):
                 for n in range(m+1):
@@ -312,7 +313,6 @@ class VQLS:
                     circuits.append(imag)
 
         print("# Transpiling")
-        t0 = time()
         self.circuits = circuits
        # self.circuits = transpile(circuits,
        #                           backend=self.backend,
@@ -635,19 +635,19 @@ class SolutionPredictorLastBest(SolutionPredictor):
 
 class SolutionPredictorSurrogate(SolutionPredictor):
 
-    def __init__(self, model, X):
+    def __init__(self, model, X, training_size=0):
         size = model.layers[-1].output.shape[-1]
         super().__init__(size)
         self.model = model
         self.X = X
+        self.training_size = training_size
+        self.fallback = SolutionPredictorLastBest(size)
 
-    def predict(self, *args, **kwargs):
-        return self.model.predict(self.X[self.iteration])
-
-
-
-
-
+    def predict(self, y, *args, **kwargs):
+        if self.iteration > self.training_size:
+            return self.model.predict(self.X[self.iteration])
+        else:
+            return self.fallback.predict_solution(y)
 
 
 if __name__ == '__main__':

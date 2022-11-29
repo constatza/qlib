@@ -10,7 +10,6 @@ import os
 import numpy as np
 from keras.models import load_model
 
-
 from qlib.solvers.vqls import VQLS, FixedAnsatz, Experiment, RealAmplitudesAnsatz, \
     SolutionPredictorSurrogate
 from qiskit.algorithms.optimizers import COBYLA, POWELL
@@ -21,7 +20,7 @@ from scipy.optimize import basinhopping
 
 
 initial_parameter_provider = 'surrogate'
-outname = 'last'
+outname = 'ml'
 input_path_physical_parameters = os.path.join("input", "parameters.in")
 
 parameters = np.loadtxt(input_path_physical_parameters)
@@ -46,6 +45,7 @@ matrices = np.block([[3*matrices, 2*matrices],
 
 
 N = matrices.shape[2]
+num_samples = matrices.shape[0]
 num_qubits = states2qubits(N)
 
 
@@ -69,10 +69,10 @@ vqls = VQLS(
 optimizer = 'bfgs'
 optimization_options = {'tol': 1e-4}
 
-model = load_model('model')
+model = load_model('model0')
 
 if initial_parameter_provider=='surrogate':
-    predictor = SolutionPredictorSurrogate(model, parameters)
+    predictor = SolutionPredictorSurrogate(model, parameters, training_size=int(0.2*num_samples))
 elif initial_parameter_provider is None:
     predictor = None
 

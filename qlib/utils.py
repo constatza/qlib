@@ -129,28 +129,21 @@ def print_time(t, msg=''):
 
 class FileLogger:
 
-    def __init__(self, filenames, directory='./output/',
-                 subdir='',
-                 dateit=True):
+    def __init__(self, filenames, directory='output', dateit=True):
 
         self.filenames = filenames
         self.dir = directory
 
         if dateit:
-            subdir += datetime.today().strftime("./%Y-%m-%d_%H-%M")
-
-        parent_dir = os.path.join(directory, subdir)
+            directory += datetime.today().strftime("%Y-%m-%d_%H-%M")
 
         try:
-            os.makedirs(parent_dir)
+            os.makedirs(directory)
         except FileExistsError:
-            print(f'{parent_dir} already exists')
+            print(f'{directory} already exists')
 
-        self.parent_dir = parent_dir
-        self.subdir = subdir
-        self.paths = [os.path.join(parent_dir, name) for name in filenames]
-
-
+        self.directory = directory
+        self.paths = [os.path.join(directory, name) for name in filenames]
 
     def save(self, data_list):
         if len(data_list) != len(self.filenames):

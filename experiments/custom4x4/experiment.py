@@ -42,7 +42,7 @@ backend = Aer.get_backend('statevector_simulator',
 matrices = matrices.transpose(2, 0, 1)
 
 matrices = np.block([[3*matrices, 2*matrices],
-                      [2*matrices, 4*matrices]])
+                     [2*matrices, 4*matrices]])
 
 # matrices = np.block([[3*matrices, 2*matrices],
 #                       [2*matrices, 4*matrices]])
@@ -68,9 +68,7 @@ vqls = VQLS(ansatz=ansatz,
             )
 
 
-optimizer = COBYLA(callback=vqls.print_cost, tol=1e-6)
-
-optimizer = POWELL(tol=1e-10)
+optimizer = 'bfgs'
 
 experiment = Experiment(matrices, rhs,
                         optimizer=optimizer,
@@ -78,8 +76,9 @@ experiment = Experiment(matrices, rhs,
                         backend=backend)
 
 
-logger = FileLogger([name for name in experiment.data.keys()] )
+logger = FileLogger([name for name in experiment.data.keys()],
+                    dateit=True
+                    )
 
 
-
-experiment.run(logger=None, dateit=True)
+experiment.run(logger=None)

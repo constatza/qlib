@@ -9,9 +9,11 @@ from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS
 
 # %% INPUT
 INITIAL_PARAMETER_PROVIDER = None
-NUM_QUBITS = 2
-OPTIMIZER = 'bfgs'
-OPTIMIZATION_OPTIONS = {'tol': 1e-4}
+NUM_QUBITS = 3
+OPTIMIZER = 'BFGS'
+OPTIMIZATION_OPTIONS = {'tol': 1e-9,
+                        'options': {'maxiter': 10000}
+                        }
 
 x_ = np.linspace(0., 1., 10)
 y_ = np.linspace(1., 2., 10)
@@ -62,8 +64,9 @@ rhs[0] = 1
 
 # %%
 ansatz = FixedAnsatz(num_qubits=NUM_QUBITS,
-                     num_layers=1,
-                     max_parameters=2**NUM_QUBITS-1)
+                     num_layers=2,
+                     max_parameters=2**NUM_QUBITS+2)
+
 
 if INITIAL_PARAMETER_PROVIDER == 'mlp':
     model = load_model('model0')

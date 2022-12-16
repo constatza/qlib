@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 from keras.models import load_model
 from qiskit.quantum_info.operators import Operator, Pauli
@@ -7,17 +8,20 @@ from qlib.utils import FileLogger
 from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS
 
 
+print(sys.argv[1])
 # %% INPUT
 INITIAL_PARAMETER_PROVIDER = None
-NUM_QUBITS = 3
+NUM_QUBITS = int(sys.argv[1])
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {'tol': 1e-9,
                         'options': {'maxiter': 10000}
                         }
 
-x_ = np.linspace(0., 1., 10)
-y_ = np.linspace(1., 2., 10)
-z_ = np.linspace(3., 4., 10)
+NUM_POINTS = int(sys.argv[2])
+
+x_ = np.linspace(0., 1., NUM_POINTS)
+y_ = np.linspace(1., 2., NUM_POINTS)
+z_ = np.linspace(3., 4., NUM_POINTS)
 
 parameter_save_path = os.path.join('input',
                                    f'parameters-num_qubits_{NUM_QUBITS:d}')

@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 18 09:48:38 2022
-
-@author: archer
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 Created on Tue Nov 15 10:18:48 2022
 
 @author: archer
@@ -101,9 +93,6 @@ fig, ax = plt.subplots()
 ax.plot(xx, yt, 'o', label='test')
 ax.plot(xx, yp, 'r+', label='predicted')
 plt.legend()
-
-
-
 
 
 y_predicted = model.predict(X_test)

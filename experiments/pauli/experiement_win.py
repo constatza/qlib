@@ -7,7 +7,7 @@ from qlib.utils import FileLogger
 from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS
 
 #%% INPUT
-INITIAL_PARAMETER_PROVIDER = None
+INITIAL_PARAMETER_PROVIDER = 'mlp'
 NUM_QUBITS = 3
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {'tol': 1e-9,
@@ -76,7 +76,7 @@ ansatz = FixedAnsatz(num_qubits=NUM_QUBITS,
 
 
 if INITIAL_PARAMETER_PROVIDER == 'mlp':
-    model = load_model('model0')
+    model = load_model(os.path.join('models', 'mlp'))
     predictor = SolutionPredictorSurrogate(
         model,
         parameters,

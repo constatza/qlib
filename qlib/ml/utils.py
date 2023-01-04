@@ -6,34 +6,12 @@ Created on Tue Nov 15 12:41:02 2022
 @author: archer
 """
 
+import tensorflow as tf
+import numpy as np
+
 from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.ops import array_ops, math_ops
 
-
-from sklearn.base import BaseEstimator, TransformerMixin
-import numpy as np
-
-class AngleScaler(BaseEstimator, TransformerMixin):
-
-    def __init__(self, freq=1, inverse=False):
-        self.freq = freq
-        self.inverse = inverse
-
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        if self.inverse:
-            self.inverse_transform(X)
-
-        freq = self.freq
-        return np.hstack([np.sin(freq*X),
-                          np.cos(freq*X)])
-
-    def inverse_transform(self, X):
-        n = X.shape[1]//2
-        return  np.arctan2(X[:, :n], X[:, n:]) / self.freq_inv
 
 
 class SinCosTransformation(Layer):
@@ -91,3 +69,32 @@ class SinCosTransformation(Layer):
         }
         base_config = super(SinCosTransformation, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
+
+class KNNRegressor(tf.keras.Model):
+
+    def __init__(self, k, dtype_policy=tf.keras.mixed_precision.Policy('float32')):
+        super(KNNRegressor, self).__init__()
+        self.k = k
+        self._dtype_policy = dtype_policy
+        
+    def fit(self, X_train, y_train):
+        self.y_train = tf.cast(y_train, tf.float32)
+        self.X_train = self.add_weight(shape=X_train.shape, initializer='uniform', trainable=False)
+        self.X_train.assign(tf.cast(X_train, tf.float32))
+        return self
+        
+    def __call__(self, inputs):
+        expanded_a = tf.expand_dims(tf.cast(inputs, tf.float32), 1)
+        expanded_b = tf.expand_dims(self.X_train, 0)
+
+        # Calculate distance between input and stored weights
+        distances = tf.reduce_sum(tf.math.squared_difference(expanded_a, expanded_b), 2)
+        
+        # Find nearest k neighbors
+        _, indices = tf.nn.top_k(-distances, k=self.k)
+        nearest_neighbors = tf.gather(self.y_train, indices)
+        
+        # Calculate mean of nearest neighbors as output
+        output = tf.reduce_mean(nearest_neighbors, axis=1)
+        return output

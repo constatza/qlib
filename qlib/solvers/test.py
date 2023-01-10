@@ -19,12 +19,11 @@ backend = Aer.get_backend('statevector_simulator',
                          precision="single")
 
 
-num_qubits = 1
+num_qubits = 2
 num_layers = 2
 
 size = 2**num_qubits
 tol = 1e-8
-np.random.seed(1)
 
 N = 2**num_qubits
 matrices = np.random.rand(2, N, N)
@@ -41,22 +40,23 @@ print(qc)
 vqls = VQLS(backend=backend,
             ansatz=ansatz)
 
-options = {'maxiter': 5000,
-           'tol': tol,
-           'callback':vqls.print_cost,
-           'rhobeg':1e-1}
 
 
 from qiskit.opflow import I, X, H, Z
+options = {
 
-for A in matrices[0:1]:
+    'gtol':1e-12,
+    'maxiter': 100000
+    }
 
-    op = H
+
+for A in matrices:
+
+    op = 100*(I^2) + (H^I) + (X^Z) 
     x = np.linalg.solve(op.to_matrix(), b)
 
-    vqls.A = H  
+    vqls.A = op
     vqls.b = b
 
-    xa = vqls.solve(optimizer='BFGS',
-                    ).get_solution(scaled=True)
+    xa = vqls.solve(optimizer='BFGS', options=options).get_solution(scaled=True)
     print(xa - x.ravel())

@@ -197,11 +197,11 @@ class LocalProjector:
         qc.append(ansatz_circuit, working_reg)
         qc.append(A_mu, [control_reg, *working_reg])
         if j > 0:
-            qc.append(self.Ub.adjoint(), working_reg)
+            qc.append(self.Ub.inverse(), working_reg)
             qc.cz(control_reg, j)
             qc.append(self.Ub, working_reg)
         qc.append(A_nu, [control_reg, *working_reg])
-        print(qc.decompose())
+        # print(qc)
 
         return qc
 
@@ -462,7 +462,7 @@ class VQLS:
         x = self.solution
         if scaled:
             b_up_to_constant = x.dot(self.lcu.matrix)
-            constants = self.target/b_up_to_constant
+            constants = self.target.ravel()/b_up_to_constant
             constant = np.mean(constants[constants != 0])
             xopt = constant*x
         else:

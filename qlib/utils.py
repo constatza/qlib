@@ -12,6 +12,7 @@ import numpy as np
 from scipy.linalg import sqrtm, qr, norm
 from qiskit.extensions import UnitaryGate
 from qiskit.quantum_info import Operator
+from qiskit.opflow.list_ops import SummedOp
 
 """
 How to apply a unitary gate
@@ -38,6 +39,10 @@ class LinearDecompositionOfUnitaries:
     def from_summed_op(self, summed_op):
         self.matrix = summed_op.to_matrix()
         self.paulis = summed_op.to_pauli_op()
+        try:
+            _ = iter(self.paulis)
+        except TypeError as te:
+            self.paulis = SummedOp([self.paulis, 0*self.paulis])
         self.coeffs = np.array([pauli.coeff for pauli in self.paulis])
         self.coeffs = self.coeffs/norm(self.coeffs)
         self.gates = [pauli.to_circuit().to_gate() for pauli in self.paulis]

@@ -201,7 +201,6 @@ class LocalProjector:
             qc.cz(control_reg, j)
             qc.append(self.Ub, working_reg)
         qc.append(A_nu, [control_reg, *working_reg])
-        # print(qc)
 
         return qc
 

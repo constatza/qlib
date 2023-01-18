@@ -26,7 +26,7 @@ size = 2**num_qubits
 tol = 1e-8
 
 N = 2**num_qubits
-matrices = np.random.rand(2, N, N)
+matrices = np.repeat(10*np.eye(N)[None, :, :], 2, axis=0) + np.random.rand(2, N, N)
 matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
 b = np.random.rand(N,1)
 
@@ -52,11 +52,14 @@ options = {
 
 for A in matrices:
 
-    op = 100*(I^2) + (H^I) + (X^Z) 
-    x = np.linalg.solve(op.to_matrix(), b)
+    op = A
+    if type(op) != np.ndarray:
+        op = op.to_matrix()
+    x = np.linalg.solve(op, b)
 
     vqls.A = op
     vqls.b = b
-
+    lcu = vqls.lcu
+    
     xa = vqls.solve(optimizer='BFGS', options=options).get_solution(scaled=True)
     print(xa - x.ravel())

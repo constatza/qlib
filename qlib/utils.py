@@ -44,7 +44,7 @@ class LinearDecompositionOfUnitaries:
         except TypeError as te:
             self.paulis = SummedOp([self.paulis, 0*self.paulis])
         self.coeffs = np.array([pauli.coeff for pauli in self.paulis])
-        self.coeffs = self.coeffs/norm(self.coeffs)
+        self.coeffs = self.coeffs/norm(self.coeffs)/10
         self.gates = [pauli.to_circuit().to_gate() for pauli in self.paulis]
         self.matrices = [pauli.to_matrix() for pauli in self.paulis]
         self.matrix_norm = norm(self.matrix)

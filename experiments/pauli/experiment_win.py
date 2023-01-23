@@ -7,7 +7,7 @@ from qlib.utils import FileLogger
 from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate 
 
 #%% INPUT
-INITIAL_PARAMETER_PROVIDER = 'mlp'
+INITIAL_PARAMETER_PROVIDER = 'random' 
 NUM_QUBITS = 3
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {'tol': 1e-9,
@@ -21,16 +21,16 @@ y_ = np.linspace(1., 2., NUM_POINTS)
 z_ = np.linspace(3., 4., NUM_POINTS)
 backend = Aer.get_backend('statevector_simulator',
                           max_parallel_threads=12,
-                            max_parallel_experiments=0)
+                            max_parallel_experiments=12)
 
 
 
 # %%
 N = 2**NUM_QUBITS
 xx, yy, zz = np.meshgrid(x_, y_, z_, indexing='ij')
-x = xx.ravel()
-y = yy.ravel()
-z = zz.ravel()
+x = xx.ravel()[100:]
+y = yy.ravel()[100:]
+z = zz.ravel()[100:]
 
 parameter_save_path = os.path.join('input',
                                    f'parameters-num_qubits_{NUM_QUBITS:d}')
@@ -81,8 +81,10 @@ if INITIAL_PARAMETER_PROVIDER == 'mlp':
     predictor = SolutionPredictorSurrogate(
         model,
         parameters,
-        training_size=int(0.1*num_samples),
+        training_size=-1#int(0.1*num_samples),
     )
+elif INITIAL_PARAMETER_PROVIDER == 'random':
+    predictor = SolutionPredictorRandom(10)
 elif INITIAL_PARAMETER_PROVIDER is None:
     predictor = None
 

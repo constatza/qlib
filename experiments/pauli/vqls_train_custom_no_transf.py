@@ -14,14 +14,14 @@ from scipy.io import loadmat
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input
 from keras.optimizers import SGD, RMSprop, Adam
-from tensorflow.keras.layers import Normalization
-from qlib.ml.utils import SinCosTransformation
+# from tensorflow.keras.layers import Normalization
+# from qlib.ml.utils import SinCosTransformation
 
 import matplotlib.pyplot as plt
-import scienceplots
+# import scienceplots
 
 
-plt.style.use(['science', 'nature'])
+# plt.style.use(['science', 'nature'])
 
 experiments_dir = os.path.join("output", "num-qubits-3_2022-12-21_11-46")
 
@@ -49,8 +49,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                     shuffle=True
                                                     )
 
-scalerX = Normalization()
-scalerX.adapt(X_train)
+# scalerX = Normalization()
+# scalerX.adapt(X_train)
 
 
 original_dims = X_train.shape[1] # 1000x3
@@ -60,7 +60,7 @@ output_dims = y_train.shape[1] # 1000x19
 layer_size = 10 
 
 model = Sequential([Input(shape=(original_dims,)),
-                    scalerX,
+                  #   scalerX,
                     Dense(layer_size,
                           input_shape=(original_dims,),
                           activation='tanh'),
@@ -110,5 +110,6 @@ for i in range(3):
 #           X_raw[:, 1], y_raw[:, 2], 'o')
 
 plt.show()
-fig.savefig('./output/img/mlp.png', dpi=400)
-model.save('./models/mlp')
+# fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)
+model.save(os.path.join('models','mlp'))
+

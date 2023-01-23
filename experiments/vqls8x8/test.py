@@ -10,7 +10,7 @@ import numpy as np
 from scipy.io import loadmat
 from qiskit import Aer
 from qlib.utils import states2qubits
-from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz, 
+from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz 
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_aer.backends.aer_simulator import AerSimulator

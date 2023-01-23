@@ -649,7 +649,7 @@ class SolutionPredictorSurrogate(SolutionPredictor):
 
     def predict(self, y, *args, **kwargs):
         if self.iteration > self.training_size:
-            return self.model.predict(self.X[self.iteration])
+            return self.model.predict(np.atleast_2d(self.X[self.iteration]))
         else:
             return self.fallback.predict_solution(y)
 

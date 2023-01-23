@@ -135,7 +135,7 @@ class FileLogger:
         self.dir = directory
 
         if dateit:
-            directory += datetime.today().strftime("%Y-%m-%d_%H-%M")
+            directory += datetime.today().strftime("%Y%m%d_%H%M")
 
         try:
             os.makedirs(directory)

@@ -184,7 +184,7 @@ class LocalProjector:
 
         inv = '\dagger'
         A_mu = self.lcu.gates[mu].control(1, label=f'A_{mu}')
-        A_nu = self.lcu.gates[nu].adjoint().control(1,
+        A_nu = self.lcu.gates[nu].inverse().control(1,
                                                     label=f'A^{inv:s}_{nu:d}')
 
         qc = QuantumCircuit(control_reg, working_reg,
@@ -197,7 +197,7 @@ class LocalProjector:
         qc.append(ansatz_circuit, working_reg)
         qc.append(A_mu, [control_reg, *working_reg])
         if j > 0:
-            qc.append(self.Ub.adjoint(), working_reg)
+            qc.append(self.Ub.inverse(), working_reg)
             qc.cz(control_reg, j)
             qc.append(self.Ub, working_reg)
         qc.append(A_nu, [control_reg, *working_reg])
@@ -460,8 +460,8 @@ class VQLS:
     def get_solution(self, scaled=False):
         x = self.solution
         if scaled:
-            b_up_to_constant = x.dot(self.matrix)
-            constants = self.target/b_up_to_constant
+            b_up_to_constant = x.dot(self.lcu.matrix)
+            constants = self.target.ravel()/b_up_to_constant
             constant = np.mean(constants[constants != 0])
             xopt = constant*x
         else:
@@ -470,13 +470,12 @@ class VQLS:
 
     @property
     def A(self):
-        return self.matrix
+        return self.lcu.matrix
 
     @A.setter
     def A(self, matrix):
         self.delete_matrix_attrs()
         self.delete_results()
-        self.matrix = matrix
         if (matrix is not None):
             self.lcu = LinearDecompositionOfUnitaries(matrix)
         else:

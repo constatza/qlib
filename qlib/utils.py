@@ -12,6 +12,7 @@ import numpy as np
 from scipy.linalg import sqrtm, qr, norm
 from qiskit.extensions import UnitaryGate
 from qiskit.quantum_info import Operator
+from qiskit.opflow.list_ops import SummedOp
 
 """
 How to apply a unitary gate
@@ -27,23 +28,45 @@ class LinearDecompositionOfUnitaries:
     a sum of unitary matrices. Stores the appropriate values."""
 
     def __init__(self, matrix):
+        if type(matrix)== np.ndarray:
+            self.from_matrix(matrix)
+        else:
+            self.from_summed_op(matrix)
+        self.num_unitaries = len(self.gates)
+        self.decomposition = np.array(self.matrices)
+
+    
+    def from_summed_op(self, summed_op):
+        self.matrix = summed_op.to_matrix()
+        self.paulis = summed_op.to_pauli_op()
+        try:
+            _ = iter(self.paulis)
+        except TypeError as te:
+            self.paulis = SummedOp([self.paulis, 0*self.paulis])
+        self.coeffs = np.array([pauli.coeff for pauli in self.paulis])
+        self.coeffs = self.coeffs/norm(self.coeffs)/10
+        self.gates = [pauli.to_circuit().to_gate() for pauli in self.paulis]
+        self.matrices = [pauli.to_matrix() for pauli in self.paulis]
+        self.matrix_norm = norm(self.matrix)
+        self.matrix_normalized = self.matrix/self.matrix_norm
+
+    def from_matrix(self, matrix):
         self.matrix = matrix
-        self.matrix_norm = norm(matrix)
+        self.matrix_norm = norm(self.matrix)
         self.matrix_normalized = self.matrix/self.matrix_norm
         matrices, coeffs = linear_decomposition_of_unitaries(self.matrix_normalized)
-        self.decomposition = np.array(matrices)
+        self.matrices = matrices
         self.coeffs = np.array(coeffs)
         self.gates = [UnitaryGate(matrix, label=f'A_{i}')
                       for i, matrix in enumerate(matrices)]
-        self.num_unitaries = len(self.gates)
 
     def valid_decomposition(self):
-
         unitary_sum = np.sum(self.coeffs[:, None, None] * self.decomposition, axis=0)
         if np.allclose(unitary_sum, self.matrix_normalized):
             return True
         else:
             return False
+
 
 
 def unitary_from_hermitian(hermitian: np.ndarray, tol=1e-8):

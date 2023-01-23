@@ -10,7 +10,7 @@ import numpy as np
 from scipy.io import loadmat
 from qiskit import Aer
 from qlib.utils import states2qubits
-from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz, 
+from qlib.solvers.vqls import VQLS, FixedAnsatz, RealAmplitudesAnsatz 
 from qiskit.algorithms.optimizers import SPSA, SciPyOptimizer, CG, COBYLA
 from qiskit.circuit.library import RealAmplitudes
 from qiskit_aer.backends.aer_simulator import AerSimulator
@@ -18,36 +18,15 @@ from qiskit_aer.backends.aer_simulator import AerSimulator
 backend = Aer.get_backend('statevector_simulator',
                          precision="single")
 
-backend.set_options(device='GPU')
 
-num_qubits = 4
+num_qubits = 2
 num_layers = 2
 
 size = 2**num_qubits
-num_shots = 2**11
 tol = 1e-8
-# np.random.seed(1)
 
-filepath = "../../data/8x8/"
-matrices = loadmat(filepath + "stiffnesses.mat")['stiffnessMatricesData'] \
-    .transpose(2, 0, 1).astype(np.float64)
-
-optimals = np.loadtxt("../../experiments/vqls8x8/results/continuous/OptimalParameters_2022-11-02_17-19.txt")
-
-
-for matrix in matrices:
-    matrix[matrix==2e4] = np.max(matrix)
-
-
-b = np.zeros((8,))
-b[3] = -100
-b[6] = 100
-
-
-# matrices = np.array(matrices[0:2, :4, :4])
-# b = np.array([1] + [0]*3)
 N = 2**num_qubits
-matrices = np.random.rand(2, N, N)
+matrices = np.repeat(10*np.eye(N)[None, :, :], 2, axis=0) + np.random.rand(2, N, N)
 matrices = 0.5*(matrices + matrices.transpose(0, 2, 1))
 b = np.random.rand(N,1)
 
@@ -58,42 +37,29 @@ ansatz = FixedAnsatz(num_qubits,
 qc = ansatz.get_circuit()
 print(qc)
 
-# ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits,
-#                              num_layers=num_layers
-#                              )
-
-
-
-# ansatz = RealAmplitudesAnsatz(num_qubits=num_qubits,
-#                    num_layers=num_layers)
-
-qc = ansatz.get_circuit()
-print(qc)
-
 vqls = VQLS(backend=backend,
             ansatz=ansatz)
 
-options = {'maxiter': 5000,
-           'tol': tol,
-           'callback':vqls.print_cost,
-           'rhobeg':1e-1}
-
-opt = COBYLA(**options)
 
 
-for A in matrices[0:1]:
+from qiskit.opflow import I, X, H, Z
+options = {
 
-    x = np.linalg.solve(A, b)
+    'gtol':1e-12,
+    'maxiter': 100000
+    }
 
-    vqls.A = A
+
+for A in matrices:
+
+    op = A
+    if type(op) != np.ndarray:
+        op = op.to_matrix()
+    x = np.linalg.solve(op, b)
+
+    vqls.A = op
     vqls.b = b
-
-    xa = vqls.solve(optimizer=opt,
-<<<<<<< HEAD
- #                   initial_parameters=x0,
-                    rhobeg=1e-1).get_solution(scaled=True)
-=======
-                    rhobeg=1e-4).get_solution(scaled=True)
->>>>>>> b2d6f746a23826a353b678c0b9be931902e9811f
-    ba = xa.dot(A)
-    print(xa)
+    lcu = vqls.lcu
+    
+    xa = vqls.solve(optimizer='BFGS', options=options).get_solution(scaled=True)
+    print(xa - x.ravel())

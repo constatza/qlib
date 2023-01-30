@@ -23,17 +23,17 @@ import matplotlib.pyplot as plt
 
 # plt.style.use(['science', 'nature'])
 
-experiments_dir = os.path.join("output", "num-qubits-3_2022-12-21_11-46")
+experiments_dir = os.path.join("output", "num-qubits-2_2022-12-02_07-43")
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
-input_path_physical_parameters = os.path.join("input", "parameters-num_qubits_3.npy")
+input_path_physical_parameters = os.path.join("input", "parameters-num_qubits_2.npy")
 
 y_raw = np.loadtxt(input_path_vqls_parameters)
 X_raw = np.load(input_path_physical_parameters)
 
 
 X = X_raw
-y = y_raw
+y = np.hstack([np.cos(y_raw), np.sin(y_raw)])
 
 
 y_dim = y.shape[1]
@@ -68,7 +68,7 @@ model = Sequential([Input(shape=(original_dims,)),
                     Dense(output_dims, activation='linear'),
     ])
 
-optimizer = Adam(learning_rate=5e-2,)
+optimizer = Adam(learning_rate=5e-1,)
 
 model.compile(loss='mse',
               optimizer=optimizer)
@@ -111,5 +111,5 @@ for i in range(3):
 
 plt.show()
 # fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)
-model.save(os.path.join('models','mlp'))
+model.save(os.path.join('models','mlp2'))
 

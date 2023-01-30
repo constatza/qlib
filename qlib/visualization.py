@@ -54,7 +54,7 @@ def compare(data, title=''):
     num_experiments = data.shape[1]
     num_points = data.shape[0]
 
-    fig, axes = plt.subplots(num_experiments, sharex=True)
+    fig, axes = plt.subplots(num_experiments, )
     for i in range(num_experiments):
         ax = axes[i]
         series = data[:, i]
@@ -67,8 +67,8 @@ if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')
     filename = 'OptimalParameters'
     figname = 'grid'
-    io_knn = ExperimentIO(parent_dir, 'q2_knn')
-    io_mlp = ExperimentIO(parent_dir, 'q2_random')
+    io_knn = ExperimentIO(parent_dir, 'q2_constant')
+    io_mlp = ExperimentIO(parent_dir, 'q2_last_best')
 
     vqls_params = io_knn.loadtxt(filename)
     names = [f'$\\alpha_{i:d}$' for i in range(vqls_params.shape[1])]
@@ -76,8 +76,8 @@ if __name__=='__main__':
     fig = pdf(df, dim=2,  vars=names[4:7] )
     io_knn.savefig(fig, figname)
 
-    iterations_mlp = io_mlp.loadtxt('NumFunctionEvaluations', ndmin=2).astype(int)[:900]
-    iterations_knn = io_knn.loadtxt('NumFunctionEvaluations', ndmin=2).astype(int)[:900]
+    iterations_mlp = io_mlp.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
+    iterations_knn = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
     iterations = np.hstack([iterations_knn, iterations_mlp])
 
     mean_knn = np.mean(iterations_knn)

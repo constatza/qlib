@@ -13,8 +13,9 @@ print(sys.argv[1])
 INITIAL_PARAMETER_PROVIDER = None
 NUM_QUBITS = int(sys.argv[1])
 OPTIMIZER = 'BFGS'
-OPTIMIZATION_OPTIONS = {'tol': 1e-9,
-                        'options': {'maxiter': 10000, }
+OPTIMIZATION_OPTIONS = {
+    'tol': 1e-9,
+     'options': {'maxiter': 10000, }
                         }
 
 NUM_POINTS = int(sys.argv[2])
@@ -81,7 +82,7 @@ if INITIAL_PARAMETER_PROVIDER == 'mlp':
     predictor = SolutionPredictorSurrogate(
         model,
         parameters,
-        training_size=int(0.2*num_samples),
+        training_size=int(0.1*num_samples),
     )
 elif INITIAL_PARAMETER_PROVIDER is None:
     predictor = None

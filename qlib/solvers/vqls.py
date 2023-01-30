@@ -610,7 +610,7 @@ class SolutionPredictorRandom(SolutionPredictor):
         super().__init__(size)
 
     def predict(self, *args, **kwargs):
-        return np.random.rand(self.size)
+        return np.random.rand(*self.size)
 
 
 class SolutionPredictorConstant(SolutionPredictor):

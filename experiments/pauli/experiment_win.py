@@ -4,11 +4,11 @@ from keras.models import load_model
 from qiskit.quantum_info.operators import Operator, Pauli
 from qiskit import Aer
 from qlib.utils import FileLogger
-from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate 
+from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate, SolutionPredictorConstant
 
 #%% INPUT
 INITIAL_PARAMETER_PROVIDER = 'random' 
-NUM_QUBITS = 3
+NUM_QUBITS = 2
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {'tol': 1e-9,
                         'options': {'maxiter': 10000, }
@@ -28,9 +28,9 @@ backend = Aer.get_backend('statevector_simulator',
 # %%
 N = 2**NUM_QUBITS
 xx, yy, zz = np.meshgrid(x_, y_, z_, indexing='ij')
-x = xx.ravel()[100:]
-y = yy.ravel()[100:]
-z = zz.ravel()[100:]
+x = xx.ravel()
+y = yy.ravel()
+z = zz.ravel()
 
 parameter_save_path = os.path.join('input',
                                    f'parameters-num_qubits_{NUM_QUBITS:d}')
@@ -81,17 +81,17 @@ if INITIAL_PARAMETER_PROVIDER == 'mlp':
     predictor = SolutionPredictorSurrogate(
         model,
         parameters,
-        training_size=-1#int(0.1*num_samples),
+        training_size=int(0.1*num_samples),
     )
 elif INITIAL_PARAMETER_PROVIDER == 'random':
-    predictor = SolutionPredictorRandom(10)
+    predictor = SolutionPredictorConstant(ansatz.num_parameters, 1)
 elif INITIAL_PARAMETER_PROVIDER is None:
     predictor = None
 
 experiment = Experiment(matrices, rhs, ansatz,
                         optimizer=OPTIMIZER,
                         initial_parameter_predictor=predictor,
-                        save_path=r'.\output\num_qubits_',
+                        save_path=r'C:\Users\cluster\constantinos\quantum\experiments\pauli\output\num_qubits_2-',
                         dateit=True,
                         backend=backend,
                         )

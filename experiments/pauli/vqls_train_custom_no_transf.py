@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 # plt.style.use(['science', 'nature'])
 
-experiments_dir = os.path.join("output", "num-qubits-2_2022-12-02_07-43")
+experiments_dir = os.path.join("output", "q2_random")
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
 input_path_physical_parameters = os.path.join("input", "parameters-num_qubits_2.npy")
@@ -33,7 +33,7 @@ X_raw = np.load(input_path_physical_parameters)
 
 
 X = X_raw
-y = np.hstack([np.cos(y_raw), np.sin(y_raw)])
+y = y_raw
 
 
 y_dim = y.shape[1]
@@ -45,7 +45,7 @@ X_dim = X.shape[1]
 ######
 
 X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                    test_size=0.9,
+                                                    test_size=0.5,
                                                     shuffle=True
                                                     )
 
@@ -68,7 +68,7 @@ model = Sequential([Input(shape=(original_dims,)),
                     Dense(output_dims, activation='linear'),
     ])
 
-optimizer = Adam(learning_rate=5e-1,)
+optimizer = Adam(learning_rate=0.1)
 
 model.compile(loss='mse',
               optimizer=optimizer)
@@ -92,7 +92,7 @@ for i in range(3):
             ax = axes[i, j]
 
             xx = X_test[:, j]
-            yp = y_predicted[:, i]
+            yp = y_predicted[:, i + 3]
             yt = y_test[:, i]
 
 
@@ -106,8 +106,9 @@ for i in range(3):
 
 
 
-# plt.plot(xx, y_predicted[:, 2], 'o',
-#           X_raw[:, 1], y_raw[:, 2], 'o')
+
+plt.figure()
+plt.scatter(y[:, 0], y[:, 1])
 
 plt.show()
 # fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)

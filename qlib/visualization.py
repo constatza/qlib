@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-import scienceplots
+# import scienceplots
 
-plt.style.use(['science', 'nature'])
+# plt.style.use(['science', 'nature'])
 plt.rcParams.update({
     'font.size': 20,
     'font.family': 'Serif',
@@ -63,6 +63,27 @@ def compare(data, title=''):
         ax.set_title(f'Total {title:s}: {total}')
     return fig
 
+def pair_grid(data, title=''):
+    num_series = data.shape[1]
+    fig, axes = plt.subplots(nrows=num_series, ncols=num_series, 
+                        figsize=(10, 10))
+    fig.suptitle(title)
+    for i in range(num_series):
+        for j in range(num_series):
+                ax = axes[i, j]
+
+                xx = data[:, j]
+                yp = data[:, i]
+
+
+                ax.scatter(xx, yp)
+                ax.set_xlabel(f'$x_{j}$')
+                ax.set_ylabel(f'$y_{i}$')
+                ax.grid()
+                if i==0 and j==0:
+                    ax.legend()
+    return fig, axes
+
 if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')
     filename = 'OptimalParameters'
@@ -85,6 +106,9 @@ if __name__=='__main__':
 
     fig = compare(iterations, 'iterations')
     io_knn.savefig(fig, 'iterations')
+
+    parameters = io_knn.loadtxt('OptimalParameters')
+    fig, axes = pair_grid(parameters)
 
     plt.show()
 

@@ -73,7 +73,7 @@ rhs[0] = 1
 # %%
 ansatz = FixedAnsatz(num_qubits=NUM_QUBITS,
                      num_layers=2,
-                     max_parameters=2**NUM_QUBITS+2)
+                     max_parameters=2**NUM_QUBITS )
 
 
 if INITIAL_PARAMETER_PROVIDER == 'mlp':

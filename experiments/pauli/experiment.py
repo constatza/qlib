@@ -3,20 +3,22 @@ import sys
 import numpy as np
 from keras.models import load_model
 from qiskit.quantum_info.operators import Operator, Pauli
-from qiskit import Aer
+from qiskit import Aer, QuantumCircuit
 from qlib.utils import FileLogger
-from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS
+from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate, SolutionPredictorConstant
 
 
 print(sys.argv[1])
 # %% INPUT
-INITIAL_PARAMETER_PROVIDER = None
+INITIAL_PARAMETER_PROVIDER = 'constant'
 NUM_QUBITS = int(sys.argv[1])
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {
     'tol': 1e-9,
      'options': {'maxiter': 10000, }
-                        }
+}
+
+save_dir = f'q{NUM_QUBITS:d}_'
 
 NUM_POINTS = int(sys.argv[2])
 
@@ -25,11 +27,11 @@ y_ = np.linspace(1., 2., NUM_POINTS)
 z_ = np.linspace(3., 4., NUM_POINTS)
 backend = Aer.get_backend('statevector_simulator',
                           max_parallel_threads=12,
-                            max_parallel_experiments=0)
+                            max_parallel_experiments=12,
+                            nshots=1)
 
 
-parameter_save_path = os.path.join('input',
-                                   f'parameters-num_qubits_{NUM_QUBITS:d}')
+parameter_save_path = os.path.join('input', save_dir + 'params')
 
 # %%
 N = 2**NUM_QUBITS
@@ -74,7 +76,17 @@ rhs[0] = 1
 # %%
 ansatz = FixedAnsatz(num_qubits=NUM_QUBITS,
                      num_layers=2,
-                     max_parameters=2**NUM_QUBITS+2)
+                     max_parameters=2**NUM_QUBITS -1)
+
+if NUM_QUBITS==2:
+    params = ansatz.parameters
+    qc = QuantumCircuit(2)
+    qc.ry(params[0], 0)
+    qc.ry(params[1], 1)
+    qc.cnot(0, 1)
+    qc.ry(params[2], 0)
+    ansatz.circuit = qc
+
 
 
 if INITIAL_PARAMETER_PROVIDER == 'mlp':
@@ -84,13 +96,15 @@ if INITIAL_PARAMETER_PROVIDER == 'mlp':
         parameters,
         training_size=int(0.1*num_samples),
     )
+elif INITIAL_PARAMETER_PROVIDER=='constant':
+    predictor = SolutionPredictorConstant(ansatz.num_parameters, 1)
 elif INITIAL_PARAMETER_PROVIDER is None:
     predictor = None
 
 experiment = Experiment(matrices, rhs, ansatz,
                         optimizer=OPTIMIZER,
                         initial_parameter_predictor=predictor,
-                        save_path=f'output/num-qubits-{NUM_QUBITS:d}_',
+                        save_path=os.path.join('output', save_dir),
                         dateit=True,
                         backend=backend,
                         )

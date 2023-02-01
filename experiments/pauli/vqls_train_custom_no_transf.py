@@ -23,17 +23,17 @@ import matplotlib.pyplot as plt
 
 # plt.style.use(['science', 'nature'])
 
-experiments_dir = os.path.join("output", "q2_random")
+experiments_dir = os.path.join("output", "q2-constant-reduced")
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
-input_path_physical_parameters = os.path.join("input", "parameters-num_qubits_2.npy")
+input_path_physical_parameters = os.path.join("input", "q2_params.npy")
 
 y_raw = np.loadtxt(input_path_vqls_parameters)
 X_raw = np.load(input_path_physical_parameters)
 
 
 X = X_raw
-y = y_raw
+y = np.sin(2*y_raw)
 
 
 y_dim = y.shape[1]
@@ -68,7 +68,7 @@ model = Sequential([Input(shape=(original_dims,)),
                     Dense(output_dims, activation='linear'),
     ])
 
-optimizer = Adam(learning_rate=0.1)
+optimizer = Adam(learning_rate=0.05)
 
 model.compile(loss='mse',
               optimizer=optimizer)
@@ -92,7 +92,7 @@ for i in range(3):
             ax = axes[i, j]
 
             xx = X_test[:, j]
-            yp = y_predicted[:, i + 3]
+            yp = y_predicted[:, i]
             yt = y_test[:, i]
 
 
@@ -109,6 +109,8 @@ for i in range(3):
 
 plt.figure()
 plt.scatter(y[:, 0], y[:, 1])
+plt.xlabel('VQLS parameter 1')
+plt.ylabel('VQLS parameter 2')
 
 plt.show()
 # fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)

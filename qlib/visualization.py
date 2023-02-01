@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-# import scienceplots
+import scienceplots
 
-# plt.style.use(['science', 'nature'])
+plt.style.use(['science', 'nature'])
 plt.rcParams.update({
     'font.size': 20,
     'font.family': 'Serif',
@@ -54,7 +54,7 @@ def compare(data, title=''):
     num_experiments = data.shape[1]
     num_points = data.shape[0]
 
-    fig, axes = plt.subplots(num_experiments, )
+    fig, axes = plt.subplots(num_experiments, sharex=True )
     for i in range(num_experiments):
         ax = axes[i]
         series = data[:, i]
@@ -88,27 +88,24 @@ if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')
     filename = 'OptimalParameters'
     figname = 'grid'
-    io_knn = ExperimentIO(parent_dir, 'q2_constant')
-    io_mlp = ExperimentIO(parent_dir, 'q2_last_best')
+    io_constant = ExperimentIO(parent_dir, 'q2-constant-local')
+    io_knn = ExperimentIO(parent_dir, 'q2-knn-local')
 
-    vqls_params = io_knn.loadtxt(filename)
+    vqls_params = np.cos(io_constant.loadtxt(filename))
     names = [f'$\\alpha_{i:d}$' for i in range(vqls_params.shape[1])]
     df = pd.DataFrame(vqls_params, columns=names)
-    fig = pdf(df, dim=2,  vars=names[4:7] )
-    io_knn.savefig(fig, figname)
+    fig = pdf(df, dim=2,  vars=names[:3] )
+    io_constant.savefig(fig, figname)
 
-    iterations_mlp = io_mlp.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
-    iterations_knn = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
-    iterations = np.hstack([iterations_knn, iterations_mlp])
+    iterations_constant = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
+    iterations_knn = io_constant.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
+    iterations = np.hstack([iterations_constant, iterations_knn])
 
     mean_knn = np.mean(iterations_knn)
-    mean_mlp = np.mean(iterations_mlp)
+    mean_constant = np.mean(iterations_constant)
 
     fig = compare(iterations, 'iterations')
-    io_knn.savefig(fig, 'iterations')
-
-    parameters = io_knn.loadtxt('OptimalParameters')
-    fig, axes = pair_grid(parameters)
+    io_constant.savefig(fig, 'iterations')
 
     plt.show()
 

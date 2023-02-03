@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 
 # plt.style.use(['science', 'nature'])
 
-experiments_dir = os.path.join("output", "q2-constant-reduced")
+experiment = "q2-constant-custom-qc"
+experiments_dir = os.path.join("output", experiment)
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
 input_path_physical_parameters = os.path.join("input", "q2_params.npy")
@@ -33,7 +34,14 @@ X_raw = np.load(input_path_physical_parameters)
 
 
 X = X_raw
-y = np.sin(2*y_raw)
+y = y_raw % np.pi # np.array([1*np.pi, np.pi, np.pi])
+y = np.sin(y)
+
+
+plt.figure()
+plt.scatter(y[:, 0], y[:, 1], c=y[:, 2])
+plt.xlabel('VQLS parameter 1')
+plt.ylabel('VQLS parameter 2')
 
 
 y_dim = y.shape[1]
@@ -45,7 +53,7 @@ X_dim = X.shape[1]
 ######
 
 X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                    test_size=0.5,
+                                                    test_size=0.2,
                                                     shuffle=True
                                                     )
 
@@ -57,7 +65,7 @@ original_dims = X_train.shape[1] # 1000x3
 output_dims = y_train.shape[1] # 1000x19
 
 
-layer_size = 10 
+layer_size = 15 
 
 model = Sequential([Input(shape=(original_dims,)),
                   #   scalerX,
@@ -65,18 +73,19 @@ model = Sequential([Input(shape=(original_dims,)),
                           input_shape=(original_dims,),
                           activation='tanh'),
                     Dense(layer_size, activation='tanh'),
+                    Dense(layer_size, activation='tanh'),
                     Dense(output_dims, activation='linear'),
     ])
 
-optimizer = Adam(learning_rate=0.05)
+optimizer = Adam(learning_rate=0.09, decay=0.011)
 
 model.compile(loss='mse',
               optimizer=optimizer)
 
 
 history = model.fit(x=X_train, y=y_train,
-                    batch_size=50,
-                    epochs=500,
+                    batch_size=100,
+                    epochs=15000,
                     validation_split=0.3)
 
 loss = model.evaluate(X_test, y_test)
@@ -85,6 +94,7 @@ y_predicted = model(X_test)
 
 
 fig, axes = plt.subplots(nrows=3, ncols=3, 
+                        sharex=True, sharey=True,
                         figsize=(10, 10))
 fig.suptitle(f'MSE loss = {loss:.2f}')
 for i in range(3):
@@ -105,12 +115,6 @@ for i in range(3):
                   ax.legend()
 
 
-
-
-plt.figure()
-plt.scatter(y[:, 0], y[:, 1])
-plt.xlabel('VQLS parameter 1')
-plt.ylabel('VQLS parameter 2')
 
 plt.show()
 # fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)

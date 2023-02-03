@@ -18,7 +18,7 @@ OPTIMIZATION_OPTIONS = {
      'options': {'maxiter': 10000, }
 }
 
-save_dir = f'q{NUM_QUBITS:d}_'
+save_dir = f'q{NUM_QUBITS:d}-' + str(INITIAL_PARAMETER_PROVIDER) + '-'
 
 NUM_POINTS = int(sys.argv[2])
 
@@ -48,6 +48,7 @@ if NUM_QUBITS == 3:
 elif NUM_QUBITS == 2:
     parameters = np.array([[np.cos(x + y), np.sin(y)],
                            [-np.sin(z), np.cos(x**2 + z)]])
+    
 
 parameters = 1/2*(parameters + parameters.transpose(1, 0, 2))
 

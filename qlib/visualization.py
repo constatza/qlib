@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-import scienceplots
+# import scienceplots
 
-plt.style.use(['science' ])
+# plt.style.use(['science', 'nature'])
 plt.rcParams.update({
-    'font.size': 23,
+    'font.size': 20,
     'font.family': 'Serif',
     'axes.grid': True
 })
@@ -50,17 +50,17 @@ def pdf(df, dim=1, **kwargs):
     return plt.gcf()
 
 
-def compare(data, labels=None):
+def compare(data, title=''):
     num_experiments = data.shape[1]
     num_points = data.shape[0]
 
-    fig, ax = plt.subplots()
-    with sns.color_palette('Spectral'):
-        sns.boxplot(data,
-                    notch=True,
-                    showfliers=False
-                    ) 
-    ax.set_xticklabels(labels)
+    fig, axes = plt.subplots(num_experiments, sharex=True )
+    for i in range(num_experiments):
+        ax = axes[i]
+        series = data[:, i]
+        total = series.sum()
+        ax.hist(series, bins=10, density=True)
+        ax.set_title(f'Total {title:s}: {total}')
     return fig
 
 def pair_grid(data, title=''):
@@ -75,6 +75,7 @@ def pair_grid(data, title=''):
                 xx = data[:, j]
                 yp = data[:, i]
 
+
                 ax.scatter(xx, yp)
                 ax.set_xlabel(f'$x_{j}$')
                 ax.set_ylabel(f'$y_{i}$')
@@ -85,24 +86,26 @@ def pair_grid(data, title=''):
 
 if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')
-    io_constant = ExperimentIO(parent_dir, 'q2-constant-custom-qc')
-    io_knn = ExperimentIO(parent_dir, 'q2-nearby-custom-qc')
+    filename = 'OptimalParameters'
+    figname = 'grid'
+    io_constant = ExperimentIO(parent_dir, 'q2-constant-local')
+    io_knn = ExperimentIO(parent_dir, 'q2-knn-local')
 
-    vqls_params = io_constant.loadtxt('OptimalParameters')
+    vqls_params = np.cos(io_constant.loadtxt(filename))
     names = [f'$\\alpha_{i:d}$' for i in range(vqls_params.shape[1])]
     df = pd.DataFrame(vqls_params, columns=names)
     fig = pdf(df, dim=2,  vars=names[:3] )
-    io_constant.savefig(fig, 'pairgrid')
+    io_constant.savefig(fig, figname)
 
-    iterations_constant = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)
-    iterations_knn = io_constant.loadtxt('NumIterations', ndmin=2).astype(int)
+    iterations_constant = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
+    iterations_knn = io_constant.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
     iterations = np.hstack([iterations_constant, iterations_knn])
 
     mean_knn = np.mean(iterations_knn)
     mean_constant = np.mean(iterations_constant)
 
-    fig = compare(iterations, labels=['Original', 'Nearby'])
-    io_constant.savefig(fig, 'compare-iterations')
+    fig = compare(iterations, 'iterations')
+    io_constant.savefig(fig, 'iterations')
 
     plt.show()
 

@@ -50,18 +50,15 @@ def pdf(df, dim=1, **kwargs):
     return plt.gcf()
 
 
-def compare(data, title=''):
+def compare(data, names, title=''):
     num_experiments = data.shape[1]
     num_points = data.shape[0]
 
-    fig, axes = plt.subplots(num_experiments, sharex=True )
-    for i in range(num_experiments):
-        ax = axes[i]
-        series = data[:, i]
-        total = series.sum()
-        ax.hist(series, bins=10, density=True)
-        ax.set_title(f'Total {title:s}: {total}')
-    return fig
+    fig, ax = plt.subplots()
+    sns.boxplot(data, width=0.5, notch=True, showfliers=False) 
+    ax.set_xticks([0, 1, 2], labels=names)
+    ax.set_title(title)
+    return fig, ax
 
 def pair_grid(data, title=''):
     num_series = data.shape[1]
@@ -75,7 +72,6 @@ def pair_grid(data, title=''):
                 xx = data[:, j]
                 yp = data[:, i]
 
-
                 ax.scatter(xx, yp)
                 ax.set_xlabel(f'$x_{j}$')
                 ax.set_ylabel(f'$y_{i}$')
@@ -86,25 +82,22 @@ def pair_grid(data, title=''):
 
 if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')
-    filename = 'OptimalParameters'
-    figname = 'grid'
-    io_constant = ExperimentIO(parent_dir, 'q2-constant-local')
-    io_knn = ExperimentIO(parent_dir, 'q2-knn-local')
 
-    vqls_params = np.cos(io_constant.loadtxt(filename))
-    names = [f'$\\alpha_{i:d}$' for i in range(vqls_params.shape[1])]
-    df = pd.DataFrame(vqls_params, columns=names)
-    fig = pdf(df, dim=2,  vars=names[:3] )
-    io_constant.savefig(fig, figname)
+    io_constant = ExperimentIO(parent_dir, 'q3-original')
+    io_mlp = ExperimentIO(parent_dir, 'q3_nn')
+    io_knn = ExperimentIO(parent_dir, 'q3_last_best')
 
-    iterations_constant = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
-    iterations_knn = io_constant.loadtxt('NumIterations', ndmin=2).astype(int)[:900]
-    iterations = np.hstack([iterations_constant, iterations_knn])
+    size = 760
+    iterations_constant = io_constant.loadtxt('NumIterations', ndmin=2).astype(int)[:size]
+    iterations_knn = io_knn.loadtxt('NumIterations', ndmin=2).astype(int)[:size]
+    iterations_mlp = io_mlp.loadtxt('NumIterations', ndmin=2).astype(int)[:size]
+    iterations = np.hstack([iterations_constant, iterations_knn, iterations_mlp])
 
     mean_knn = np.mean(iterations_knn)
     mean_constant = np.mean(iterations_constant)
 
-    fig = compare(iterations, 'iterations')
+    fig, ax = compare(iterations, names=['Constant', 'Nearby', 'MLP'], title='8x8 system - 3 qubits')
+    ax.set_ylabel('Iterations')
     io_constant.savefig(fig, 'iterations')
 
     plt.show()

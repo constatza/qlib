@@ -5,11 +5,14 @@ import seaborn as sns
 import pandas as pd
 import scienceplots
 
-plt.style.use(['science' ])
+plt.style.use(['science', 'grid'])
 plt.rcParams.update({
+    'axes.grid': True,
+    'axes.grid.which': 'both',
     'font.size': 23,
     'font.family': 'Serif',
-    'axes.grid': True
+    'figure.figsize': (7.5, 5.5),
+    'figure.dpi': 500,
 })
 
 class ExperimentIO:
@@ -82,6 +85,22 @@ def pair_grid(data, title=''):
                 if i==0 and j==0:
                     ax.legend()
     return fig, axes
+
+def plot_convergence(loss: object, title: object) -> object:
+    """ Plot the loss function with respect to the number of iterations
+        uses scientific format for the y-axis
+     @rtype: object
+     @param loss:
+     @param title:
+    """
+    fig, ax = plt.subplots()
+    ax.plot(loss)
+    ax.set_title(title)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Loss')
+    ax.set_yscale('log')
+    ax.grid(which='minor')
+    return fig, ax
 
 if __name__=='__main__':
     parent_dir = os.path.join(os.path.dirname(os.getcwd()), 'experiments', 'pauli')

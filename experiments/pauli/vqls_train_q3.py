@@ -24,19 +24,22 @@ import matplotlib.pyplot as plt
 # plt.style.use(['science', 'nature'])
 
 
-experiment = "q2-constant-custom-qc"
+experiment = "q3_last_best"
 experiments_dir = os.path.join("output", experiment)
 
 input_path_vqls_parameters = os.path.join(experiments_dir, "OptimalParameters")
-input_path_physical_parameters = os.path.join("input", "q2_params.npy")
+input_path_physical_parameters = os.path.join("input", "parameters-num_qubits_3.npy")
+
+optimizer = Adam(learning_rate=0.05, decay=0.00005)
+# optimizer = Adam(learning_rate=0.05 )
 
 y_raw = np.loadtxt(input_path_vqls_parameters)
 X_raw = np.load(input_path_physical_parameters)
 
 
 X = X_raw
-y = y_raw % np.pi # np.array([1*np.pi, np.pi, np.pi])
-y = np.concatenate([np.sin(y), np.cos(y)], axis=1)
+y = y_raw #% np.pi # np.array([1*np.pi, np.pi, np.pi])
+# y = np.concatenate([np.sin(y/2), np.cos(y/2)], axis=1)
 
 
 plt.figure()
@@ -66,19 +69,17 @@ original_dims = X_train.shape[1] # 1000x3
 output_dims = y_train.shape[1] # 1000x19
 
 
-layer_size = 3
+layer_size = 20
 
 model = Sequential([Input(shape=(original_dims,)),
                     scalerX,
                     Dense(layer_size,
                           input_shape=(original_dims,),
                           activation='tanh'),
-                    Dense(layer_size, activation='tanh'),
+                    # Dense(layer_size, activation='tanh'),
                     Dense(output_dims, activation='linear'),
     ])
 
-# optimizer = Adam(learning_rate=0.09, decay=0.0011)
-optimizer = Adam(learning_rate=0.05 )
 
 model.compile(loss='mse',
               optimizer=optimizer)
@@ -86,7 +87,7 @@ model.compile(loss='mse',
 
 history = model.fit(x=X_train, y=y_train,
                     batch_size=1000,
-                    epochs=5000,
+                    epochs=10000,
                     validation_split=0.3)
 
 loss = model.evaluate(X_test, y_test)
@@ -117,5 +118,5 @@ for i in range(3):
 
 plt.show()
 # fig.savefig(os.path.join('output'/img/mlp.png', dpi=400)
-model.save(os.path.join('models','mlp2'))
+model.save(os.path.join('models','mlp3'))
 

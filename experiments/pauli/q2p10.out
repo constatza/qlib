@@ -1,0 +1,241 @@
+2023-02-22 09:55:25.621495: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-02-22 09:55:25.728513: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2023-02-22 09:55:25.728636: I tensorflow/compiler/xla/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+2023-02-22 09:55:26.232111: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory
+2023-02-22 09:55:26.232780: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory
+2023-02-22 09:55:26.232792: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+2
+# --------------------
+# Experiment: 0
+# Transpiling
+#  Elapsed Time: 2.33s
+# Optimizing
+6.85390e-02
+6.33104e-02
+5.46057e-02
+4.07708e-02
+3.24484e-02
+2.33775e-02
+9.65494e-03
+9.71305e-04
+7.82234e-04
+4.46707e-04
+2.81657e-05
+1.49950e-06
+6.26726e-08
+9.58727e-10
+3.06793e-12
+3.58935e-13
+1.39722e-13
+1.30174e-13
+1.25400e-13
+1.16129e-13
+1.13631e-13
+# Solution Elapsed Time: 8.94s
+# Function Value: 1.12632e-13
+# Total Simulation Elapsed Time: 11.27s
+# --------------------
+# Experiment: 1
+# Transpiling
+#  Elapsed Time: 2.23s
+# Optimizing
+1.69322e-01
+1.48600e-01
+8.31782e-02
+7.87414e-02
+7.04694e-02
+5.62746e-02
+4.14627e-02
+3.16625e-02
+2.80118e-02
+2.13218e-02
+9.94568e-03
+1.82592e-03
+7.20708e-04
+3.04796e-05
+6.82686e-06
+1.32449e-07
+8.26916e-12
+1.03872e-12
+1.83131e-13
+1.81133e-13
+1.67644e-13
+1.29341e-13
+1.27010e-13
+1.22680e-13
+1.28508e-13
+1.21014e-13
+# Solution Elapsed Time: 14.05s
+# Function Value: 1.19182e-13
+# Total Simulation Elapsed Time: 27.56s
+# --------------------
+# Experiment: 2
+# Transpiling
+#  Elapsed Time: 2.19s
+# Optimizing
+1.34104e-01
+1.11849e-01
+1.02215e-01
+9.63789e-02
+8.72459e-02
+7.25444e-02
+4.00653e-02
+2.80890e-02
+1.36057e-02
+8.09401e-03
+2.25341e-03
+2.86171e-04
+5.43228e-05
+2.73239e-05
+4.14948e-07
+1.92518e-08
+4.21607e-13
+1.83575e-13
+1.79745e-13
+1.90292e-13
+1.79523e-13
+# Solution Elapsed Time: 13.29s
+# Function Value: 1.75915e-13
+# Total Simulation Elapsed Time: 43.04s
+# --------------------
+# Experiment: 3
+# Transpiling
+#  Elapsed Time: 2.34s
+# Optimizing
+1.73919e-01
+1.24647e-01
+1.08784e-01
+1.02465e-01
+9.76451e-02
+7.39695e-02
+6.78911e-02
+5.75728e-02
+4.03620e-02
+1.87133e-02
+7.94477e-03
+3.22881e-03
+2.44711e-03
+1.17796e-03
+9.76174e-05
+6.24454e-06
+1.56844e-08
+4.56702e-11
+9.01057e-13
+2.45692e-13
+2.35645e-13
+# Solution Elapsed Time: 19.64s
+# Function Value: 2.39142e-13
+# Total Simulation Elapsed Time: 65.03s
+# --------------------
+# Experiment: 4
+# Transpiling
+#  Elapsed Time: 2.18s
+# Optimizing
+1.36199e-01
+1.20536e-01
+1.15249e-01
+1.09272e-01
+1.06873e-01
+1.03135e-01
+9.89382e-02
+9.52603e-02
+8.89649e-02
+7.79926e-02
+6.62231e-02
+4.63476e-02
+1.30446e-02
+8.56083e-03
+3.17794e-03
+1.66405e-03
+1.05242e-04
+4.98280e-06
+7.84882e-07
+1.03445e-10
+6.43152e-13
+4.80005e-13
+4.57079e-13
+# Solution Elapsed Time: 11.04s
+# Function Value: 4.68348e-13
+# Total Simulation Elapsed Time: 78.26s
+# --------------------
+# Experiment: 5
+# Transpiling
+#  Elapsed Time: 2.24s
+# Optimizing
+1.54642e-01
+1.38810e-01
+1.32490e-01
+1.24179e-01
+1.21265e-01
+1.20160e-01
+1.18102e-01
+1.14996e-01
+1.11807e-01
+1.06163e-01
+9.84239e-02
+8.56337e-02
+6.79430e-02
+6.31456e-02
+5.51912e-02
+4.53968e-02
+2.91328e-02
+6.79841e-03
+1.53672e-04
+2.81873e-06
+1.87370e-07
+1.10638e-09
+1.72506e-12
+1.73328e-12
+# Solution Elapsed Time: 14.47s
+# Function Value: 1.71274e-12
+# Total Simulation Elapsed Time: 94.97s
+# --------------------
+# Experiment: 6
+# Transpiling
+#  Elapsed Time: 2.34s
+# Optimizing
+1.27877e-01
+1.22433e-01
+1.21760e-01
+1.21692e-01
+1.21563e-01
+1.21321e-01
+1.20884e-01
+1.20216e-01
+1.19649e-01
+1.18570e-01
+1.16665e-01
+1.14659e-01
+1.13709e-01
+1.10635e-01
+1.08872e-01
+1.07210e-01
+1.04495e-01
+9.94356e-02
+9.71755e-02
+9.33748e-02
+8.67836e-02
+7.83438e-02
+6.35685e-02
+5.48140e-02
+4.29486e-02
+2.91980e-02
+1.38514e-02
+2.04456e-03
+9.73496e-04
+2.90385e-05
+5.32875e-07
+1.45405e-08
+2.18324e-09
+5.29982e-11
+1.96274e-11
+9.36595e-12
+9.00630e-12
+9.11343e-12
+8.99103e-12
+# Solution Elapsed Time: 26.58s
+# Function Value: 9.02162e-12
+# Total Simulation Elapsed Time: 123.90s
+# --------------------
+# Experiment: 7

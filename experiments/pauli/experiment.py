@@ -5,12 +5,12 @@ from keras.models import load_model
 from qiskit.quantum_info.operators import Operator, Pauli
 from qiskit import Aer, QuantumCircuit
 from qlib.utils import FileLogger
-from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate, SolutionPredictorConstant
+from qlib.solvers.vqls import Experiment, FixedAnsatz, VQLS, SolutionPredictorSurrogate, SolutionPredictorConstant, SolutionPredictorRandom
 
 
 print(sys.argv[1])
 # %% INPUT
-INITIAL_PARAMETER_PROVIDER = 'constant'
+INITIAL_PARAMETER_PROVIDER = 'random'
 NUM_QUBITS = int(sys.argv[1])
 OPTIMIZER = 'BFGS'
 OPTIMIZATION_OPTIONS = {
@@ -99,6 +99,8 @@ if INITIAL_PARAMETER_PROVIDER == 'mlp':
     )
 elif INITIAL_PARAMETER_PROVIDER=='constant':
     predictor = SolutionPredictorConstant(ansatz.num_parameters, 1)
+elif INITIAL_PARAMETER_PROVIDER == 'random':
+    predictor = SolutionPredictorRandom(ansatz.num_parameters)
 elif INITIAL_PARAMETER_PROVIDER is None:
     predictor = None
 
